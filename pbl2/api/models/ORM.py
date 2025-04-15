@@ -61,9 +61,10 @@ class Session(Base):
     user_id = Column(Integer, ForeignKey('user.user_id'), nullable=False)
     title = Column(String(320), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    modify_at = Column(DateTime(timezone=True), nullable=True, server_default=func.now(), onupdate=func.now())
 
     user = relationship('User', back_populates='sessions')
-    topic_sessions = relationship('TopicSession', back_populates='session')
+    topic_sessions = relationship('TopicSession', back_populates='session', cascade="all, delete-orphan")
     files = relationship("File", back_populates="session", cascade="all, delete-orphan")
     
     topics = relationship("Topic", secondary="topic_session", viewonly=True, lazy="selectin")

@@ -23,6 +23,7 @@ class SessionOut(BaseModel):
     title: str
     topics: List[TopicInfo]
     created_at: datetime
+    modify_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

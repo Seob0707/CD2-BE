@@ -37,7 +37,7 @@ async def get_all_sessions(db: AsyncSession, user_id: int):
 async def get_session_by_id(db: AsyncSession, session_id: int):
     stmt = (
         select(Session)
-        .options(selectinload(Session.topics))
+        .options(selectinload(Session.topics), selectinload(Session.topic_sessions))
         .where(Session.session_id == session_id)
     )
     result = await db.execute(stmt)
@@ -54,7 +54,7 @@ async def update_session(db: AsyncSession, session_id: int, update_data) -> Sess
     return session_obj
 
 async def delete_session(db: AsyncSession, session_id: int):
-    session_obj = await get_session_by_id(db, session_id)
+    session_obj = await db.get(Session, session_id)
     if not session_obj:
         raise HTTPException(status_code=404, detail="세션을 찾을 수 없습니다.")
     await db.delete(session_obj)
