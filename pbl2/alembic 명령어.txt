@@ -1,0 +1,16 @@
+alembic 명령어
+
+[ 생성 ]
+
+alembic init -t async migrations
+
+[ 빌드 ]
+alembic revision --autogenerate -m "<메시지>"
+
+[ 푸시 ]
+alembic upgrade head
+
+[ 오류 해결법 ]
+# 현재 상태를 최신 버전으로 강제 설정
+alembic stamp head
+

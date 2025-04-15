@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  local:
+    build: .
+    container_name: backend
+    image: seob0707/backend:v4.1
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+
+  db:
+    image: mysql:8.0
+    platform: linux/x86_64
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_DATABASE: 'demo'
+      TZ: 'Asia/Seoul'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --authentication_policy=mysql_native_password
+    ports:
+      - 3306:3306
+
+volumes:
+  mysql_data:
+  
