@@ -1,0 +1,277 @@
+2025/03/25 10:43:26 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:43:31 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:43:35 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:43:39 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:43:44 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:43:50 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:43:57 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:44:08 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:44:24 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:44:59 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:45:04 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:45:08 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:45:12 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:45:17 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:45:23 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:45:30 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:45:40 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:45:57 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:46:27 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/25 10:46:41 [notice] 1#1: using the "epoll" event method
+2025/03/25 10:46:41 [notice] 1#1: nginx/1.27.4
+2025/03/25 10:46:41 [notice] 1#1: built by gcc 12.2.0 (Debian 12.2.0-14) 
+2025/03/25 10:46:41 [notice] 1#1: OS: Linux 5.15.167.4-microsoft-standard-WSL2
+2025/03/25 10:46:41 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+2025/03/25 10:46:41 [notice] 1#1: start worker processes
+2025/03/25 10:46:41 [notice] 1#1: start worker process 29
+2025/03/25 10:46:41 [notice] 1#1: start worker process 30
+2025/03/25 10:48:14 [error] 29#29: *7 connect() failed (113: No route to host) while connecting to upstream, client: 172.22.0.1, server: yourdomain.com, request: "GET / HTTP/1.1", upstream: "http://172.22.0.2:8000/", host: "localhost"
+2025/03/25 10:48:29 [notice] 1#1: signal 3 (SIGQUIT) received, shutting down
+2025/03/25 10:48:29 [notice] 30#30: gracefully shutting down
+2025/03/25 10:48:29 [notice] 30#30: exiting
+2025/03/25 10:48:29 [notice] 29#29: gracefully shutting down
+2025/03/25 10:48:29 [notice] 30#30: exit
+2025/03/25 10:48:29 [notice] 1#1: signal 17 (SIGCHLD) received from 30
+2025/03/25 10:48:29 [notice] 1#1: worker process 30 exited with code 0
+2025/03/25 10:48:29 [notice] 1#1: signal 29 (SIGIO) received
+2025/03/26 11:37:00 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:37:04 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:37:08 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:37:13 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:37:18 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:37:23 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:37:31 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:37:41 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:37:58 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:38:28 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:39:23 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:40:27 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:41:31 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:42:35 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:43:39 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:44:43 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:45:47 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:46:51 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:47:55 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:49:00 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:50:04 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:51:08 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:52:12 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:53:16 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:54:20 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:55:24 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:56:28 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:57:32 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:58:36 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 11:59:40 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:00:44 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:01:48 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:02:52 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:03:56 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:05:00 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:06:05 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:07:09 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:08:13 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:09:17 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:10:21 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:11:25 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:12:29 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:13:33 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:14:37 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:15:41 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:16:45 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:17:49 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:18:53 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:19:57 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:21:01 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:22:05 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:23:09 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:24:13 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:25:17 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:26:22 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:27:26 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:28:30 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:29:34 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:30:38 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:31:42 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:32:46 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:33:50 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:34:54 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:35:58 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:37:02 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:38:06 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:39:10 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:40:14 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:41:18 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:42:22 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:43:26 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:44:30 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:45:34 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:46:38 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:47:43 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:48:47 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:49:51 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:50:55 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:51:59 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:53:03 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:54:07 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:55:11 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:56:15 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:57:19 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:58:23 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 12:59:27 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:00:31 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:01:35 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:02:39 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:03:43 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:04:47 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:05:51 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:06:55 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:07:59 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:09:03 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:10:07 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:11:11 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:12:15 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:13:19 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:14:23 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:15:28 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:16:32 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:17:36 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:18:40 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:19:44 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:20:48 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:21:52 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:22:56 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:24:00 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:25:04 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:26:08 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:27:12 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 13:28:16 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:01:49 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:01:54 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:01:59 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:02:03 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:02:09 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:02:16 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:02:27 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:02:44 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:03:13 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:04:09 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:05:13 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:06:17 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:07:21 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:08:25 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:09:29 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:10:33 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:11:37 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:12:41 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:13:45 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:14:49 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:15:53 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:16:57 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:18:01 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:19:06 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:20:10 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:21:14 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:22:18 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:23:22 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/26 14:24:26 [notice] 1#1: using the "epoll" event method
+2025/03/26 14:24:26 [notice] 1#1: nginx/1.27.4
+2025/03/26 14:24:26 [notice] 1#1: built by gcc 12.2.0 (Debian 12.2.0-14) 
+2025/03/26 14:24:26 [notice] 1#1: OS: Linux 5.15.167.4-microsoft-standard-WSL2
+2025/03/26 14:24:26 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+2025/03/26 14:24:26 [notice] 1#1: start worker processes
+2025/03/26 14:24:26 [notice] 1#1: start worker process 28
+2025/03/26 14:24:26 [notice] 1#1: start worker process 29
+2025/03/26 15:42:08 [notice] 1#1: signal 3 (SIGQUIT) received, shutting down
+2025/03/26 15:42:08 [notice] 28#28: gracefully shutting down
+2025/03/26 15:42:08 [notice] 28#28: exiting
+2025/03/26 15:42:08 [notice] 29#29: gracefully shutting down
+2025/03/26 15:42:08 [notice] 29#29: exiting
+2025/03/26 15:42:08 [notice] 29#29: exit
+2025/03/26 15:42:08 [notice] 28#28: exit
+2025/03/26 15:42:08 [notice] 1#1: signal 17 (SIGCHLD) received from 29
+2025/03/26 15:42:08 [notice] 1#1: worker process 28 exited with code 0
+2025/03/26 15:42:08 [notice] 1#1: worker process 29 exited with code 0
+2025/03/26 15:42:08 [notice] 1#1: exit
+2025/03/27 04:58:01 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 04:58:07 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 04:58:16 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 04:58:20 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 04:58:26 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 04:58:33 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 04:58:40 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 04:58:50 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 04:59:07 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 04:59:37 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 05:00:32 [notice] 1#1: using the "epoll" event method
+2025/03/27 05:00:32 [notice] 1#1: nginx/1.27.4
+2025/03/27 05:00:32 [notice] 1#1: built by gcc 12.2.0 (Debian 12.2.0-14) 
+2025/03/27 05:00:32 [notice] 1#1: OS: Linux 5.15.167.4-microsoft-standard-WSL2
+2025/03/27 05:00:32 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+2025/03/27 05:00:32 [notice] 1#1: start worker processes
+2025/03/27 05:00:32 [notice] 1#1: start worker process 28
+2025/03/27 05:00:32 [notice] 1#1: start worker process 29
+2025/03/27 05:05:26 [notice] 1#1: signal 3 (SIGQUIT) received, shutting down
+2025/03/27 05:05:26 [notice] 29#29: gracefully shutting down
+2025/03/27 05:05:26 [notice] 29#29: exiting
+2025/03/27 05:05:26 [notice] 28#28: gracefully shutting down
+2025/03/27 05:05:26 [notice] 28#28: exiting
+2025/03/27 05:05:26 [notice] 29#29: exit
+2025/03/27 05:05:26 [notice] 28#28: exit
+2025/03/27 05:05:26 [notice] 1#1: signal 17 (SIGCHLD) received from 28
+2025/03/27 05:05:26 [notice] 1#1: worker process 28 exited with code 0
+2025/03/27 05:05:26 [notice] 1#1: worker process 29 exited with code 0
+2025/03/27 05:05:26 [notice] 1#1: exit
+2025/03/27 08:56:25 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 08:56:30 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 08:56:34 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 08:56:38 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 08:56:43 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 08:56:49 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 08:56:56 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 08:57:07 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 08:57:24 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 08:57:53 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 08:58:48 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 08:59:53 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:00:57 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:02:01 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:03:05 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:04:09 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:05:13 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:06:22 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:07:26 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:08:31 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:09:35 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:10:39 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:11:43 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:12:47 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:13:51 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:14:55 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:15:59 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:17:03 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:18:07 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:19:12 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:20:16 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:21:20 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:22:24 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:23:28 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:24:32 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:25:36 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:26:40 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:27:44 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:28:48 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:29:52 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:30:56 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:32:00 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:33:04 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:34:08 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:35:12 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:36:16 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:37:20 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:38:24 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:39:28 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:40:32 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:41:36 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7
+2025/03/27 09:42:40 [emerg] 1#1: host not found in upstream "backend" in /etc/nginx/conf.d/default.conf:7

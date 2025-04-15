@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "pbl2"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.11"
+sqlalchemy = "^2.0.39"
+uvicorn = "^0.34.0"
+alembic = "^1.15.1"
+aiomysql = "^0.2.0"
+python-dotenv = "^1.0.1"
+pydantic = {version = "2.9.2", extras = ["email"]}
+passlib = {version = "1.7.4", extras = ["bcrypt"]}
+python-jose = {version = "3.3.0", extras = ["cryptography"]}
+pydantic-settings = "^2.8.1"
+httpx = "^0.28.1"
+python-multipart = "^0.0.20"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

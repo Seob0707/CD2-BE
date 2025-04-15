@@ -1,0 +1,5 @@
+172.22.0.1 - - [25/Mar/2025:10:46:57 +0000] "GET / HTTP/1.1" 404 22 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Whale/4.30.291.11 Safari/537.36" "-"
+172.22.0.1 - - [25/Mar/2025:10:46:58 +0000] "GET /favicon.ico HTTP/1.1" 404 22 "http://localhost/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Whale/4.30.291.11 Safari/537.36" "-"
+172.22.0.1 - - [25/Mar/2025:10:47:20 +0000] "GET / HTTP/1.1" 499 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Whale/4.30.291.11 Safari/537.36" "-"
+172.22.0.1 - - [25/Mar/2025:10:48:11 +0000] "GET / HTTP/1.1" 499 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Whale/4.30.291.11 Safari/537.36" "-"
+172.22.0.1 - - [25/Mar/2025:10:48:14 +0000] "GET / HTTP/1.1" 502 559 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Whale/4.30.291.11 Safari/537.36" "-"
