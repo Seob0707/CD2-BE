@@ -42,7 +42,7 @@ RUN mkdir -p /src/certs && \
 # 5. 애플리케이션 코드와 마이그레이션 복사
 #################################################
 COPY api ./api
-COPY api/migrations ./migrations
+COPY migrations ./migrations
 
 #################################################
 # 6. 환경 설정 및 포트 노출
