@@ -1,31 +1,51 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
-from api.routers import user_router, oauth_router, session_router, file_router, topic_router, search_router, dev_util_router 
+
+from api.routers.user_router      import router as user_router
+from api.routers.oauth_router     import router as oauth_router
+from api.routers.session_router   import router as session_router
+from api.routers.file_router      import router as file_router
+from api.routers.topic_router     import router as topic_router
+from api.routers.search_router    import router as search_router
+from api.routers.dev_util_router  import router as dev_util_router
+from api.routers.ai_router        import router as ai_router
+from api.routers.admin_router     import router as admin_router
+from api.routers.faiss_router     import router as faiss_router
 
 app = FastAPI()
 
-ORIGIN = [
+ORIGINS = [
     "http://localhost:5173",
-    "https://pbl.kro.kr"
+    "https://pbl.kro.kr",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ORIGIN,
+    allow_origins=ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
-@app.get("/version", tags=["version"])
+@app.get("/version", tags=["Version"])
 async def version():
     return {"version": "1.0.0"}
 
-app.include_router(user_router.router, prefix="/api/v1/user", tags=["User"])
-app.include_router(oauth_router.router, prefix="/api/v1/oauth", tags=["OAuth"])
-app.include_router(session_router.router, prefix="/api/v1/sessions", tags=["Session"])
-app.include_router(file_router.router, prefix="/api/v1/sessions", tags=["File"])
-app.include_router(topic_router.router, prefix="/api/v1/topics", tags=["Topic"])
-app.include_router(search_router.router, prefix="/api/v1/search", tags=["Search"])
-app.include_router(dev_util_router.router, prefix="/api/v1", tags=["seed"])
+# User & Auth
+app.include_router(user_router,    prefix="/api/v1/user",     tags=["User"])
+app.include_router(oauth_router,   prefix="/api/v1/oauth",    tags=["OAuth"])
+
+# Session & File
+app.include_router(session_router, prefix="/api/v1/sessions", tags=["Session"])
+app.include_router(file_router,    prefix="/api/v1/files",    tags=["File"])
+
+# Topic, Search, Dev-Utils
+app.include_router(topic_router,   prefix="/api/v1/topics",   tags=["Topic"])
+app.include_router(search_router,  prefix="/api/v1/search",   tags=["Search"])
+app.include_router(dev_util_router,prefix="/api/v1/dev",      tags=["Dev"])
+
+# AI & Admin & Faiss
+app.include_router(ai_router)      
+app.include_router(admin_router)   
+app.include_router(faiss_router,   prefix="/api/v1/faiss",    tags=["Faiss"])

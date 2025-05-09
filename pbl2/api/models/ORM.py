@@ -51,6 +51,7 @@ class User(Base):
     password = Column(String(320), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     modified_date = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    role = Column(String(20), nullable=False, server_default="user")
 
     sessions = relationship('Session', back_populates='user')  
     agree = relationship('Agree', back_populates='user', uselist=False)  

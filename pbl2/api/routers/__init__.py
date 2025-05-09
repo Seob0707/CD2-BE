@@ -1,0 +1,1 @@
+from .faiss_router import router as faiss_router

@@ -23,15 +23,31 @@ cd ..
 cd project
 
 배포
-4.9.3까지 함
+5.5까지 함
 
-docker build -t seob0707/backend:v4.9.3 .
+docker build -t seob0707/backend:v5.5.7 .
 
-docker push seob0707/backend:v4.9.3
+docker push seob0707/backend:v5.5.7
 
-sudo docker pull seob0707/backend:v4.9.3
+sudo docker pull seob0707/backend:v5.5.7
 
 vim docker-compose-backend.yaml
+
+sudo docker kill backend
+
+sudo docker rm backend
+
+sudo docker compose -f docker-compose-backend.yaml up -d
+
+db최신화
+
+./update.sh
+
+
+db 접속
+mysql -h database-1.clo2k2ikg8bv.ap-northeast-2.rds.amazonaws.com -u admin -p
+
+
 [server, .env 수정] vim .env
 i를 눌러서 메시지 수정 모드 실행
 방향키로 images 부분의 이미지 버전 수정
@@ -64,4 +80,6 @@ sudo docker ps
 
 cat /src/api/models/ORM.py
 
+db최신화
 
+./update.sh

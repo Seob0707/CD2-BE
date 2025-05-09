@@ -1,10 +1,12 @@
 import os
 import tempfile
 import base64
-import httpx 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File as UploadFileDep, BackgroundTasks
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+
 from api.database import get_db
 from api.core.auth import get_current_user
 from api.models.ORM import User, Session
@@ -16,63 +18,88 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".pdf", ".csv", ".txt"}
 
+
+MAX_FILE_COUNT    = 3                    # 허용 파일 개수
+MAX_FILE_SIZE     = 5  * 1024 * 1024     # 개별 파일 최대 5MiB
+MAX_TOTAL_SIZE    = 10 * 1024 * 1024     # 전체 합계 최대 10MiB
+
 def is_allowed_file(filename: str) -> bool:
     ext = os.path.splitext(filename)[1].lower()
     return ext in ALLOWED_EXTENSIONS
 
 def simulate_send_to_ai(encoded_data: str):
-    """
-    인공지능 서버로 전송 준비하는 스텁 함수.
-    실제 전송 구현 전까지는 인코딩된 데이터의 일부를 출력합니다.
-    """
-    ai_server_url = "http://ai-server.example.com/process"
+    ai_server_url = "http://15.164.125.221:8000"
     print(f"AI 서버 전송 준비 - encoded_data (일부): {encoded_data[:100]}...")
-    # 실제 전송 예시 (비동기):
-    # async with httpx.AsyncClient() as client:
-    #     response = await client.post(ai_server_url, json={"data": encoded_data})
-    #     response.raise_for_status()
-    #     return response.json()
 
 @router.post("/{session_id}/files")
-async def upload_file(
+async def upload_files(
     session_id: int,
     background_tasks: BackgroundTasks,
-    file: UploadFile = UploadFileDep(...),
+    files: List[UploadFile] = File(...),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    
     stmt = select(Session).where(Session.session_id == session_id)
     result = await db.execute(stmt)
     session_obj = result.scalars().first()
-    if session_obj is None:
+    if not session_obj:
         raise HTTPException(status_code=404, detail="세션을 찾을 수 없습니다.")
     if session_obj.user_id != current_user.user_id:
-        raise HTTPException(status_code=403, detail="해당 세션에 대한 접근 권한이 없습니다.")
+        raise HTTPException(status_code=403, detail="접근 권한이 없습니다.")
 
-    if not is_allowed_file(file.filename):
-        raise HTTPException(status_code=400, detail="허용되지 않는 파일 형식입니다. (jpg, png, pdf, csv, txt만 허용)")
+    if len(files) > MAX_FILE_COUNT:
+        raise HTTPException(
+            status_code=413,
+            detail=f"최대 {MAX_FILE_COUNT}개까지 업로드할 수 있습니다."
+        )
 
-    try:
-        file_content = await file.read()
+    total_size = 0
+    saved_paths = []
+
+    for file in files:
+        if not is_allowed_file(file.filename):
+            raise HTTPException(
+                status_code=400,
+                detail=f"허용되지 않는 파일 형식입니다: {file.filename}"
+            )
+
+        cl = file.headers.get("content-length")
+        if cl and int(cl) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"파일 \"{file.filename}\"이(가) {MAX_FILE_SIZE//(1024*1024)}MiB를 넘습니다."
+            )
+
+        content = await file.read()
+        size = len(content)
+        total_size += size
+
+        if size > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"파일 \"{file.filename}\"이(가) {MAX_FILE_SIZE//(1024*1024)}MiB를 넘습니다."
+            )
+        if total_size > MAX_TOTAL_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"전체 업로드 용량이 {MAX_TOTAL_SIZE//(1024*1024)}MiB를 초과했습니다."
+            )
+
+        suffix = os.path.splitext(file.filename)[1]
         with tempfile.NamedTemporaryFile(
-            delete=False, 
-            dir=UPLOAD_DIR, 
-            prefix="temp_", 
-            suffix=os.path.splitext(file.filename)[1]
-        ) as temp_file:
-            temp_file.write(file_content)
-            temp_file_path = temp_file.name
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"임시 파일 생성 오류: {e}")
+            delete=False,
+            dir=UPLOAD_DIR,
+            prefix="temp_",
+            suffix=suffix
+        ) as tmp:
+            tmp.write(content)
+            saved_paths.append(tmp.name)
 
-    try:
-        encoded_data = base64.b64encode(file_content).decode('utf-8')
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"파일 인코딩 오류: {e}")
-
-    background_tasks.add_task(simulate_send_to_ai, encoded_data)
+        encoded = base64.b64encode(content).decode("utf-8")
+        background_tasks.add_task(simulate_send_to_ai, encoded)
 
     return {
-        "detail": "파일이 성공적으로 처리되었습니다.",
-        "temp_file_path": temp_file_path
+        "detail": f"{len(saved_paths)}개 파일이 성공적으로 업로드되었습니다.",
+        "paths": saved_paths
     }

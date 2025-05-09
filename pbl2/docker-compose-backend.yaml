@@ -1,12 +1,12 @@
-version: '3'
+version: '3.8'
 
 services:
   local:
     build: .
     container_name: backend
-    image: seob0707/backend:v4.1
-    ports:
-      - "8000:8000"
+    image: seob0707/backend:v4.9.8
+    expose:
+      - "8000"  
     env_file:
       - .env
 
@@ -25,4 +25,4 @@ services:
 
 volumes:
   mysql_data:
-  
+  faiss_data:
