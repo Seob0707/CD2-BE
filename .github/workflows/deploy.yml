@@ -50,9 +50,8 @@ jobs:
           PROJECT_DIR_ON_EC2:  /home/project
         run: |
           ssh -o StrictHostKeyChecking=accept-new "$EC2_LOGIN_USER@$EC2_HOST" << 'EOF'
-            cd $PROJECT_DIR_ON_EC2
-            export BACKEND_IMAGE_NAME="${DOCKER_HUB_USERNAME}/backend"
-            export BACKEND_IMAGE_TAG="$IMAGE_TAG"
+            cd /home/project
+            sed -i "s|^DOCKER_IMAGE=.*|DOCKER_IMAGE=${DOCKER_HUB_USERNAME}/backend:${IMAGE_TAG}|" .env
             sudo docker compose -f docker-compose-backend.yaml pull backend
             sudo docker compose -f docker-compose-backend.yaml up -d --no-deps backend
             sudo docker image prune -af
