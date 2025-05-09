@@ -1,3 +1,4 @@
+# .github/workflows/deploy.yml
 name: CI/CD Deploy
 
 on:
@@ -13,17 +14,18 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up SSH key
+      # SSH 에이전트 기동 및 키 로딩
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.5.5
+        with:
+          # EC2_SSH_KEY 시크릿(PEM 포맷)을 에이전트에 추가
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      # 호스트 키 검증용 known_hosts 등록
+      - name: Add EC2 to known_hosts
         run: |
-          # DEBUG: 홈 디렉터리 출력
-          echo "HOME=$HOME"
-          # 명시적으로 SSH 폴더 생성
-          mkdir -p "$HOME/.ssh"
-          # deploy key 기록
-          echo "${{ secrets.EC2_SSH_KEY }}" > "$HOME/.ssh/deploy_key.pem"
-          chmod 600 "$HOME/.ssh/deploy_key.pem"
-          # 호스트 키 스캔
-          ssh-keyscan -H "${{ secrets.EC2_REMOTE_IP }}" > "$HOME/.ssh/known_hosts"
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.EC2_REMOTE_IP }}" >> ~/.ssh/known_hosts
 
       - name: Build Docker image
         run: |
@@ -43,8 +45,9 @@ jobs:
 
       - name: Deploy on EC2 via SSH
         run: |
-          ssh -i "$HOME/.ssh/deploy_key.pem" \
-            "${{ secrets.USER }}@${{ secrets.EC2_REMOTE_IP }}" \
+          ssh -o StrictHostKeyChecking=no \
+            -l "${{ secrets.USER }}" \
+            "${{ secrets.EC2_REMOTE_IP }}" \
             "cd /home/ubuntu/pbl2 && \
              docker-compose pull && \
              docker-compose up -d --build"
