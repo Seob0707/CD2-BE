@@ -29,7 +29,7 @@ jobs:
           docker build \
             -f "${{ secrets.DOCKER_BUILD_FILE }}" \
             -t "${{ secrets.DOCKER_USERNAME }}/myapp:${{ github.sha }}" \
-            pbl2
+            .
 
       - name: Log in to Docker Hub
         run: |
@@ -45,7 +45,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no \
             -l "${{ secrets.USER }}" \
             "${{ secrets.EC2_REMOTE_IP }}" << 'EOF'
-            cd /home/project
-            sudo docker compose -f docker-compose-backend.yaml pull
-            sudo docker compose -f docker-compose-backend.yaml up -d --build
-            EOF
+          cd /home/project
+          sudo docker compose -f docker-compose-backend.yaml pull
+          sudo docker compose -f docker-compose-backend.yaml up -d --build
+          EOF
