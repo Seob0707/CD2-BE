@@ -43,8 +43,8 @@ jobs:
       - name: Deploy on EC2 via SSH
         run: |
           ssh -o StrictHostKeyChecking=no \
-            -l "${{ secrets.USER }}" \
-            "${{ secrets.EC2_REMOTE_IP }}" \
-            "cd /home/ubuntu/pbl2 && \
-             docker-compose pull && \
-             docker-compose up -d --build"
+          -l "${{ secrets.USER }}" \
+          "${{ secrets.EC2_REMOTE_IP }}" \
+          "cd /home/project && \
+           docker-compose pull && \
+           docker-compose up -d --build"
