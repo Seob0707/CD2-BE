@@ -25,7 +25,8 @@ RUN pip install "poetry==1.8.4"
 #################################################
 # 3. 파이썬 의존성 정의 복사 및 설치
 #################################################
-COPY pyproject.toml poetry.lock ./
+COPY pyproject.toml ./
+COPY poetry.Lock  ./
 
 # 시스템에 직접 설치하도록 설정 후 배포용 패키지 설치
 RUN poetry config virtualenvs.create false \
