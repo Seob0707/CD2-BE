@@ -2,7 +2,8 @@ name: CI/CD Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build-and-deploy:
@@ -14,24 +15,34 @@ jobs:
 
       - name: Set up SSH key
         run: |
+          # SSH 디렉터리가 없으면 생성
+          mkdir -p ~/.ssh
+          # 시크릿에 저장된 PEM 키를 파일로 출력
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key.pem
           chmod 600 ~/.ssh/deploy_key.pem
+          # EC2 호스트 키를 known_hosts에 등록
           ssh-keyscan -H ${{ secrets.EC2_REMOTE_IP }} >> ~/.ssh/known_hosts
 
       - name: Build Docker image
-        run: docker build -f ${{ secrets.DOCKER_BUILD_FILE }} -t ${{ secrets.DOCKER_USERNAME }}/myapp:${{ github.sha }} .
+        run: |
+          docker build \
+            -f ${{ secrets.DOCKER_BUILD_FILE }} \
+            -t ${{ secrets.DOCKER_USERNAME }}/myapp:${{ github.sha }} \
+            .
 
       - name: Log into Docker Hub
-        run: echo "${{ secrets.DOCKER_ACCESS_TOKEN }}" | \
-             docker login --username ${{ secrets.DOCKER_USERNAME }} --password-stdin
+        run: |
+          echo "${{ secrets.DOCKER_ACCESS_TOKEN }}" | \
+            docker login --username ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
       - name: Push image to Docker Hub
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/myapp:${{ github.sha }}
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/myapp:${{ github.sha }}
 
       - name: Deploy on EC2 via SSH
         run: |
           ssh -i ~/.ssh/deploy_key.pem \
-              ${{ secrets.USER }}@${{ secrets.EC2_REMOTE_IP }} \
-            "docker pull ${{ secrets.DOCKER_USERNAME }}/myapp:${{ github.sha }} \
-             && cd /home/ubuntu/pbl2 \
-             && docker-compose up -d --build"
+            ${{ secrets.USER }}@${{ secrets.EC2_REMOTE_IP }} \
+            "cd /home/ubuntu/pbl2 && \
+             docker-compose pull && \
+             docker-compose up -d --build"
