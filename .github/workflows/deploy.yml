@@ -45,7 +45,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no \
             -l "${{ secrets.USER }}" \
             "${{ secrets.EC2_REMOTE_IP }}" << 'EOF'
-cd /home/project
-sudo docker compose -f docker-compose-backend.yaml pull
-sudo docker compose -f docker-compose-backend.yaml up -d --build
-EOF
+            cd /home/project
+            sudo docker compose -f docker-compose-backend.yaml pull
+            sudo docker compose -f docker-compose-backend.yaml up -d --build
+            EOF
