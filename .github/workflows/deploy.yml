@@ -46,5 +46,5 @@ jobs:
           -l "${{ secrets.USER }}" \
           "${{ secrets.EC2_REMOTE_IP }}" \
           "cd /home/project && \
-           docker-compose pull && \
-           docker-compose up -d --build"
+           sudo docker compose -f docker-compose-backend.yaml pull && \
+           sudo docker compose -f docker-compose-backend.yaml up -d --build
