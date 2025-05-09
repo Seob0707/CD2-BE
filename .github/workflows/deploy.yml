@@ -1,4 +1,4 @@
-name: CI/CD Deploy
+name: CI/CD Deploy Backend
 
 on:
   push:
@@ -11,10 +11,27 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+      - name: Build and push Docker image for backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./pbl2
+          file:    ./pbl2/Dockerfile
+          push:    true
+          tags:    ${{ secrets.DOCKER_USERNAME }}/backend:${{ github.sha }}
 
       - name: Set up SSH Agent
-        uses: webfactory/ssh-agent@v0.5.4
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
@@ -24,28 +41,19 @@ jobs:
           ssh-keyscan -H "${{ secrets.EC2_REMOTE_IP }}" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Build Docker image
+      - name: Deploy to EC2
+        env:
+          EC2_LOGIN_USER:      ${{ secrets.USER }}
+          EC2_HOST:            ${{ secrets.EC2_REMOTE_IP }}
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          IMAGE_TAG:           ${{ github.sha }}
+          PROJECT_DIR_ON_EC2:  /home/project
         run: |
-          docker build \
-            -f pbl2/Dockerfile \
-            -t ${{ secrets.DOCKER_USERNAME }}/myapp:${{ github.sha }} \
-            pbl2
-
-      - name: Log in to Docker Hub
-        run: |
-          echo "${{ secrets.DOCKER_ACCESS_TOKEN }}" | \
-            docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: Push image to Docker Hub
-        run: |
-          docker push "${{ secrets.DOCKER_USERNAME }}/myapp:${{ github.sha }}"
-
-      - name: Deploy backend on EC2 via SSH
-        run: |
-          ssh -o StrictHostKeyChecking=no \
-            -l "${{ secrets.USER }}" \
-            "${{ secrets.EC2_REMOTE_IP }}" << 'EOF'
-          cd /home/project
-          sudo docker compose -f docker-compose-backend.yaml pull
-          sudo docker compose -f docker-compose-backend.yaml up -d --build
+          ssh -o StrictHostKeyChecking=accept-new "$EC2_LOGIN_USER@$EC2_HOST" << 'EOF'
+            cd $PROJECT_DIR_ON_EC2
+            export BACKEND_IMAGE_NAME="${DOCKER_HUB_USERNAME}/backend"
+            export BACKEND_IMAGE_TAG="$IMAGE_TAG"
+            sudo docker compose -f docker-compose-backend.yaml pull backend
+            sudo docker compose -f docker-compose-backend.yaml up -d --no-deps backend
+            sudo docker image prune -af
           EOF
