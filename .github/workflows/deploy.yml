@@ -25,6 +25,7 @@ jobs:
           chmod 644 ~/.ssh/known_hosts
 
       - name: Build Docker image
+        working-directory: ./pbl2
         run: |
           docker build \
             -f "${{ secrets.DOCKER_BUILD_FILE }}" \
