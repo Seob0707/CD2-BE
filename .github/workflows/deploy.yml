@@ -27,9 +27,9 @@ jobs:
       - name: Build Docker image
         run: |
           docker build \
-            -f "${{ secrets.DOCKER_BUILD_FILE }}" \
-            -t "${{ secrets.DOCKER_USERNAME }}/myapp:${{ github.sha }}" \
-            "$(dirname "${{ secrets.DOCKER_BUILD_FILE }}")"
+            -f pbl2/Dockerfile \
+            -t ${{ secrets.DOCKER_USERNAME }}/myapp:${{ github.sha }} \
+            pbl2
 
       - name: Log in to Docker Hub
         run: |
