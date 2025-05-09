@@ -1,4 +1,3 @@
-# .github/workflows/deploy.yml
 name: CI/CD Deploy
 
 on:
@@ -14,14 +13,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # SSH 에이전트 기동 및 키 로딩
       - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.5.5
+        uses: webfactory/ssh-agent@v0.5
         with:
-          # EC2_SSH_KEY 시크릿(PEM 포맷)을 에이전트에 추가
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      # 호스트 키 검증용 known_hosts 등록
       - name: Add EC2 to known_hosts
         run: |
           mkdir -p ~/.ssh
@@ -48,6 +44,4 @@ jobs:
           ssh -o StrictHostKeyChecking=no \
             -l "${{ secrets.USER }}" \
             "${{ secrets.EC2_REMOTE_IP }}" \
-            "cd /home/ubuntu/pbl2 && \
-             docker-compose pull && \
-             docker-compose up -d --build"
+            "cd /home/ubuntu/pbl2 && docker-compose pull && docker-compose up -d --build"
