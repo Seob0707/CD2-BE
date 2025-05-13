@@ -18,6 +18,9 @@ app = FastAPI()
 ORIGINS = [
     "http://localhost:5173",
     "https://pbl.kro.kr",
+    "https://cd2-fe.vercel.app",
+    "http://15.164.125.221:8000"
+    
 ]
 
 app.add_middleware(
