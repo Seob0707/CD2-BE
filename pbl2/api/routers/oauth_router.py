@@ -75,5 +75,13 @@ async def google_callback(
         user = await user_service.create_oauth_user(db, user_schema.UserOAuthCreate(email=email, nickname=email))
     jwt_token = security.create_access_token(data={"sub": str(user.user_id)})
     response = RedirectResponse(FRONTEND_URL, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
-    response.set_cookie("access_token", jwt_token, httponly=True, secure=True)
+    response.set_cookie(
+        "access_token",
+        jwt_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        domain="app.yoursite.com", 
+        path="/"
+    )
     return response
