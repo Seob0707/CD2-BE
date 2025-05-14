@@ -1,5 +1,3 @@
-# api/routers/oauth.py
-
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import RedirectResponse
 import httpx
@@ -22,12 +20,10 @@ GOOGLE_AUTH_URI      = "https://accounts.google.com/o/oauth2/auth"
 GOOGLE_TOKEN_URI     = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URI  = "https://www.googleapis.com/oauth2/v2/userinfo"
 
-router = APIRouter(tags=["OAuth"])
-
+router = APIRouter(prefix="/oauth", tags=["OAuth"])
 
 class OAuth2TokenResponse(BaseToken):
     user_id: int
-
 
 @router.get("/google/login", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 async def google_login():
@@ -46,22 +42,23 @@ async def google_login():
     response.set_cookie("oauth_state", state, httponly=True, secure=True, samesite="none", path="/")
     return response
 
-
 @router.get("/google/callback", response_model=OAuth2TokenResponse)
 async def google_callback(
-    code: str = Query(..., description="구글에서 받은 인가 코드"),
-    state: str = Query(..., description="CSRF 방지용 state"),
-    db: AsyncSession = Depends(get_db),
+    code: str = Query(...),
+    state: str = Query(...),
+    db: AsyncSession = Depends(get_db)
 ):
-    # state 검증 생략…
     async with httpx.AsyncClient() as client:
-        token_resp = await client.post(GOOGLE_TOKEN_URI, data={
-            "code":          code,
-            "client_id":     GOOGLE_CLIENT_ID,
-            "client_secret": GOOGLE_CLIENT_SECRET,
-            "redirect_uri":  GOOGLE_REDIRECT_URI,
-            "grant_type":    "authorization_code",
-        })
+        token_resp = await client.post(
+            GOOGLE_TOKEN_URI,
+            data={
+                "code":          code,
+                "client_id":     GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri":  GOOGLE_REDIRECT_URI,
+                "grant_type":    "authorization_code"
+            }
+        )
         if token_resp.status_code != 200:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="토큰 교환 실패")
 
