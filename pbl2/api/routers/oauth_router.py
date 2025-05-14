@@ -81,7 +81,6 @@ async def google_callback(
         httponly=True,
         secure=True,
         samesite="none",
-        domain="app.yoursite.com", 
         path="/"
     )
     return response
