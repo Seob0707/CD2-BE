@@ -1,7 +1,6 @@
-# api/routers/oauth_router.py
-from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import RedirectResponse
 import httpx, os
+from urllib.parse import urlencode
 from sqlalchemy.ext.asyncio import AsyncSession
 from api.database import get_db
 from api.domain import user_service
@@ -10,13 +9,11 @@ from api.schemas import user_schema
 
 router = APIRouter()
 
-# 환경변수
 GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_REDIRECT_URI  = os.getenv("GOOGLE_REDIRECT_URI")   # e.g. https://pbl.kro.kr/api/v1/oauth/google/callback
-FRONTEND_URL         = os.getenv("FRONTEND_URL")         # e.g. https://cd2-fe.vercel.app
+GOOGLE_REDIRECT_URI  = os.getenv("GOOGLE_REDIRECT_URI")
+FRONTEND_URL         = os.getenv("FRONTEND_URL")
 
-# 구글 OAuth 엔드포인트
 GOOGLE_AUTH_URI      = "https://accounts.google.com/o/oauth2/auth"
 GOOGLE_TOKEN_URI     = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URI  = "https://www.googleapis.com/oauth2/v2/userinfo"
@@ -24,7 +21,6 @@ SCOPE                = "email profile"
 
 @router.get("/google/login")
 async def google_login():
-    # 구글 인증 페이지로 307 리디렉트
     params = {
         "response_type": "code",
         "client_id":     GOOGLE_CLIENT_ID,
@@ -33,8 +29,9 @@ async def google_login():
         "access_type":   "offline",
         "prompt":        "consent",
     }
-    auth_url = httpx.URL(GOOGLE_AUTH_URI).include_query_params(**params)
-    return RedirectResponse(str(auth_url), status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+    query_string = urlencode(params)
+    auth_url = f"{GOOGLE_AUTH_URI}?{query_string}"
+    return RedirectResponse(auth_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
 @router.get("/google/callback")
 async def google_callback(
