@@ -15,10 +15,12 @@ config = Config(".env")
 GOOGLE_CLIENT_ID     = config("GOOGLE_CLIENT_ID", cast=str)
 GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", cast=str)
 GOOGLE_REDIRECT_URI  = config("GOOGLE_REDIRECT_URI", cast=str)
+FRONTEND_CALLBACK_URL = config("FRONTEND_CALLBACK_URL", cast=str)
 SCOPE                = "openid email profile"
 GOOGLE_AUTH_URI      = "https://accounts.google.com/o/oauth2/auth"
 GOOGLE_TOKEN_URI     = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URI  = "https://www.googleapis.com/oauth2/v2/userinfo"
+
 
 router = APIRouter(tags=["OAuth"])
 
@@ -42,7 +44,7 @@ async def google_login():
     response.set_cookie("oauth_state", state, httponly=True, secure=True, samesite="none", path="/")
     return response
 
-@router.get("/google/callback", response_model=OAuth2TokenResponse)
+@router.get("/google/callback")
 async def google_callback(
     code: str = Query(...),
     state: str = Query(...),
@@ -52,26 +54,27 @@ async def google_callback(
         token_resp = await client.post(
             GOOGLE_TOKEN_URI,
             data={
-                "code":          code,
-                "client_id":     GOOGLE_CLIENT_ID,
+                "code": code,
+                "client_id": GOOGLE_CLIENT_ID,
                 "client_secret": GOOGLE_CLIENT_SECRET,
-                "redirect_uri":  GOOGLE_REDIRECT_URI,
-                "grant_type":    "authorization_code"
+                "redirect_uri": GOOGLE_REDIRECT_URI,
+                "grant_type": "authorization_code",
             }
         )
         if token_resp.status_code != 200:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="토큰 교환 실패")
+            raise HTTPException(status_code=400, detail="토큰 교환 실패")
 
         access_token = token_resp.json().get("access_token")
+
         userinfo_resp = await client.get(
             GOOGLE_USERINFO_URI,
             headers={"Authorization": f"Bearer {access_token}"}
         )
         if userinfo_resp.status_code != 200:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="유저 정보 조회 실패")
+            raise HTTPException(status_code=400, detail="유저 정보 조회 실패")
 
         ui = userinfo_resp.json()
-        email = ui.get("email")
+        email = ui["email"]
         nickname = ui.get("name", email)
 
     user = await user_service.get_user_by_email(db, email)
@@ -80,4 +83,7 @@ async def google_callback(
         user = await user_service.create_oauth_user(db, dto)
 
     jwt_token = create_access_token(data={"sub": str(user.user_id)})
-    return OAuth2TokenResponse(access_token=jwt_token, token_type="bearer", user_id=user.user_id)
+
+    redirect_url = f"{FRONTEND_CALLBACK_URL}?access_token={jwt_token}"
+    return RedirectResponse(redirect_url, status_code=status.HTTP_302_FOUND)
+
