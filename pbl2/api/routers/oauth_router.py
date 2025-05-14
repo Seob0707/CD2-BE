@@ -20,7 +20,7 @@ GOOGLE_AUTH_URI      = "https://accounts.google.com/o/oauth2/auth"
 GOOGLE_TOKEN_URI     = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URI  = "https://www.googleapis.com/oauth2/v2/userinfo"
 
-router = APIRouter(prefix="/oauth", tags=["OAuth"])
+router = APIRouter(tags=["OAuth"])
 
 class OAuth2TokenResponse(BaseToken):
     user_id: int

@@ -35,7 +35,7 @@ app.add_middleware(
 async def version():
     return {"version": "1.0.0"}
 
-# User & Auth
+# User
 app.include_router(user_router,    prefix="/api/v1/user",     tags=["User"])
 app.include_router(oauth_router,   prefix="/api/v1/oauth",    tags=["OAuth"])
 
