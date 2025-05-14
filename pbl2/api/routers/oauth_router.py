@@ -3,23 +3,19 @@ from fastapi.responses import RedirectResponse
 import httpx
 import secrets
 from urllib.parse import urlencode
-from pydantic import BaseSettings, AnyUrl
+from starlette.config import Config
 from sqlalchemy.ext.asyncio import AsyncSession
 from api.database import get_db
 from api.domain import user_service
 from api.schemas import user_schema
 from api.core import security
 
-class Settings(BaseSettings):
-    google_client_id: str
-    google_client_secret: str
-    google_redirect_uri: AnyUrl
-    frontend_url: AnyUrl
+config = Config(".env")
 
-    class Config:
-        env_file = ".env"
-
-settings = Settings()
+GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID", cast=str)
+GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", cast=str)
+GOOGLE_REDIRECT_URI = config("GOOGLE_REDIRECT_URI", cast=str)
+FRONTEND_URL = config("FRONTEND_URL", cast=str)
 
 GOOGLE_AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
 GOOGLE_TOKEN_URI = "https://oauth2.googleapis.com/token"
@@ -33,8 +29,8 @@ async def google_login():
     state = secrets.token_urlsafe(16)
     params = {
         "response_type": "code",
-        "client_id": settings.google_client_id,
-        "redirect_uri": settings.google_redirect_uri,
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
         "scope": SCOPE,
         "access_type": "offline",
         "prompt": "consent",
@@ -58,9 +54,9 @@ async def google_callback(
     async with httpx.AsyncClient() as client:
         token_resp = await client.post(GOOGLE_TOKEN_URI, data={
             "code": code,
-            "client_id": settings.google_client_id,
-            "client_secret": settings.google_client_secret,
-            "redirect_uri": settings.google_redirect_uri,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": GOOGLE_REDIRECT_URI,
             "grant_type": "authorization_code",
         })
         if token_resp.status_code != 200:
@@ -78,7 +74,6 @@ async def google_callback(
     if not user:
         user = await user_service.create_oauth_user(db, user_schema.UserOAuthCreate(email=email, nickname=email))
     jwt_token = security.create_access_token(data={"sub": str(user.user_id)})
-    redirect_url = settings.frontend_url
-    response = RedirectResponse(redirect_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+    response = RedirectResponse(FRONTEND_URL, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
     response.set_cookie("access_token", jwt_token, httponly=True, secure=True)
     return response
