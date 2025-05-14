@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+# api/routers/oauth_router.py
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import RedirectResponse
-import httpx
-import os
+import httpx, os
 from sqlalchemy.ext.asyncio import AsyncSession
 from api.database import get_db
 from api.domain import user_service
@@ -10,76 +10,90 @@ from api.schemas import user_schema
 
 router = APIRouter()
 
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+# 환경변수
+GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")  
+GOOGLE_REDIRECT_URI  = os.getenv("GOOGLE_REDIRECT_URI")   # e.g. https://pbl.kro.kr/api/v1/oauth/google/callback
+FRONTEND_URL         = os.getenv("FRONTEND_URL")         # e.g. https://cd2-fe.vercel.app
 
-GOOGLE_AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
-GOOGLE_TOKEN_URI = "https://oauth2.googleapis.com/token"
-GOOGLE_USERINFO_URI = "https://www.googleapis.com/oauth2/v2/userinfo"
-SCOPE = "email profile"
+# 구글 OAuth 엔드포인트
+GOOGLE_AUTH_URI      = "https://accounts.google.com/o/oauth2/auth"
+GOOGLE_TOKEN_URI     = "https://oauth2.googleapis.com/token"
+GOOGLE_USERINFO_URI  = "https://www.googleapis.com/oauth2/v2/userinfo"
+SCOPE                = "email profile"
 
 @router.get("/google/login")
 async def google_login():
-    auth_url = (
-        f"{GOOGLE_AUTH_URI}"
-        f"?response_type=code"
-        f"&client_id={GOOGLE_CLIENT_ID}"
-        f"&redirect_uri={GOOGLE_REDIRECT_URI}"
-        f"&scope={SCOPE}"
-        f"&access_type=offline"
-        f"&prompt=consent"
-    )
-    return RedirectResponse(auth_url)
+    # 구글 인증 페이지로 307 리디렉트
+    params = {
+        "response_type": "code",
+        "client_id":     GOOGLE_CLIENT_ID,
+        "redirect_uri":  GOOGLE_REDIRECT_URI,
+        "scope":         SCOPE,
+        "access_type":   "offline",
+        "prompt":        "consent",
+    }
+    auth_url = httpx.URL(GOOGLE_AUTH_URI).include_query_params(**params)
+    return RedirectResponse(str(auth_url), status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
 @router.get("/google/callback")
-async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
+async def google_callback(
+    code: str = Query(None),
+    error: str = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    # 에러 파라미터 처리 (등록 URI 불일치 등)
+    if error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Google OAuth Error: {error}"
+        )
+    if not code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="구글에서 인가 코드를 받지 못했습니다."
+        )
+
+    # 1) code → access_token 교환
     async with httpx.AsyncClient() as client:
-        token_data = {
-            "code": code,
-            "client_id": GOOGLE_CLIENT_ID,
+        token_resp = await client.post(GOOGLE_TOKEN_URI, data={
+            "code":          code,
+            "client_id":     GOOGLE_CLIENT_ID,
             "client_secret": GOOGLE_CLIENT_SECRET,
-            "redirect_uri": GOOGLE_REDIRECT_URI,
-            "grant_type": "authorization_code"
-        }
-        token_resp = await client.post(GOOGLE_TOKEN_URI, data=token_data)
+            "redirect_uri":  GOOGLE_REDIRECT_URI,
+            "grant_type":    "authorization_code",
+        })
         if token_resp.status_code != 200:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"구글에서 토큰 발급에 실패하였습니다: {token_resp.text}"
+                detail=f"토큰 교환 실패: {token_resp.text}"
             )
-        token_json = token_resp.json()
-        access_token = token_json.get("access_token")
-        if not access_token:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="구글 access token이 없습니다."
-            )
+        access_token = token_resp.json().get("access_token")
 
-        headers = {"Authorization": f"Bearer {access_token}"}
-        userinfo_resp = await client.get(GOOGLE_USERINFO_URI, headers=headers)
+        # 2) userinfo 호출
+        userinfo_resp = await client.get(
+            GOOGLE_USERINFO_URI,
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
         if userinfo_resp.status_code != 200:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"구글에서 사용자 정보를 가져오는데 실패하였습니다: {userinfo_resp.text}"
+                detail=f"사용자 정보 조회 실패: {userinfo_resp.text}"
             )
         userinfo = userinfo_resp.json()
         email = userinfo.get("email")
-        nickname = email
 
-    existing_user = await user_service.get_user_by_email(db, email)
-    if not existing_user:
-        oauth_user_data = user_schema.UserOAuthCreate(email=email, nickname=nickname)
-        new_user = await user_service.create_oauth_user(db, oauth_user_data)
-        user = new_user
-    else:
-        user = existing_user
+    # 3) DB에서 사용자 조회 또는 생성
+    user = await user_service.get_user_by_email(db, email)
+    if not user:
+        user = await user_service.create_oauth_user(
+            db,
+            user_schema.UserOAuthCreate(email=email, nickname=email)
+        )
 
+    # 4) JWT 생성
     jwt_token = security.create_access_token(data={"sub": str(user.user_id)})
 
-    return {
-        "access_token": jwt_token,
-        "token_type": "bearer",
-        "user_id": user.user_id
-    }
-
+    # 5) 프론트엔드로 Redirect (토큰 전달)
+    redirect_url = f"{FRONTEND_URL}/oauth2/redirect?token={jwt_token}"
+    return RedirectResponse(redirect_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
