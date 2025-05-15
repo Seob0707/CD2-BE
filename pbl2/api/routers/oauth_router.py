@@ -37,7 +37,7 @@ async def google_login():
     url = f"https://accounts.google.com/o/oauth2/auth?{urlencode(params)}"
     from fastapi.responses import RedirectResponse
     response = RedirectResponse(url)
-    response.set_cookie("oauth_state", state, httponly=True, secure=True, samesite="none", path="/")
+    response.set_cookie("oauth_state", state, httponly=True, secure=False, samesite="none", path="/")
     return response
 
 @router.get("/google/callback", response_model=OAuth2TokenResponse)
