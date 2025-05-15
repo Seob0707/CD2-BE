@@ -50,7 +50,7 @@ class User(Base):
     Oauth_id = Column(String(100), nullable=True)
     email = Column(String(320), nullable=False)
     nickname = Column(String(50), nullable=True)
-    password = Column(String(320), nullable=False)
+    password = Column(String(320), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     modified_date = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     role = Column(String(20), nullable=False, server_default="user")
