@@ -4,7 +4,8 @@ from authlib.integrations.starlette_client import OAuth
 from authlib.oauth2.rfc6749.errors import OAuth2Error 
 from starlette.config import Config
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional 
+from typing import Optional
+from datetime import timedelta
 
 from api.database import get_db
 from api.domain import user_service
@@ -126,7 +127,7 @@ async def google_callback(
     jwt_payload = {"sub": str(user.user_id), "email": user.email, "role": user.role}
     app_jwt_token = create_access_token(
         data=jwt_payload,
-        expires_delta_minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        expires_delta=timedelta(minutes = JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
     response.set_cookie(
