@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request, Response, Depends, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
+#from fastapi.security import OAuth2PasswordBearer
 from authlib.integrations.starlette_client import OAuth
 from authlib.oauth2.rfc6749.errors import OAuth2Error
 from starlette.config import Config
@@ -65,9 +66,13 @@ async def google_callback(
     else:
         user = await user_service.update_user_oauth_details(db, user, nickname, "google", sub, token_data.get("refresh_token"))
     jwt_payload = {"sub": str(user.user_id), "email": user.email, "role": user.role}
-    app_jwt_token = create_access_token(data=jwt_payload, expires_delta=timedelta(minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES))
+    #app_jwt_token = create_access_token(data=jwt_payload, expires_delta=timedelta(minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES))
     # JSON으로 토큰 반환
-    return JSONResponse({"access_token": app_jwt_token, "token_type": "bearer"})
+    #return JSONResponse({"access_token": app_jwt_token, "token_type": "bearer"})
+    app_jwt_token = create_access_token(data=jwt_payload)
+    frontend = FRONTEND_CALLBACK_URL 
+    redirect_url = f"{frontend}?access_token={app_jwt_token}&token_type=bearer"
+    return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
 
 @router.post("/logout", summary="로그아웃")
 async def logout(response: Response):
