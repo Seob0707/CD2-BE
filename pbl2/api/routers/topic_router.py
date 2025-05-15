@@ -13,9 +13,8 @@ router = APIRouter(
 )
 
 @router.get(
-    "/",
-    response_model=List[TopicOut],
-    dependencies=[Depends(get_current_user)]  
+    "/", 
+    response_model=List[TopicOut]
 )
 async def list_topics(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Topic))

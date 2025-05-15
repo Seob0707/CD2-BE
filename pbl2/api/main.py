@@ -32,6 +32,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET_KEY", "fallback-secret-key"),
+    session_cookie="session",
+    max_age=14 * 24 * 3600,   # 14일
+    same_site="lax",
+    https_only=True           
+)
+
 @app.get("/version", tags=["Version"])
 async def version():
     return {"version": "1.0.0"}
