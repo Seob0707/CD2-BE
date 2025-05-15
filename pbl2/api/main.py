@@ -37,7 +37,7 @@ async def version():
 
 # User
 app.include_router(user_router,    prefix="/api/v1/user",     tags=["User"])
-app.include_router(oauth_router,   prefix="/api/v1/oauth",    tags=["OAuth"])
+app.include_router(oauth_router,   prefix="/api/v1/oauth/google",    tags=["OAuth"])
 
 # Session & File
 app.include_router(session_router, prefix="/api/v1/sessions", tags=["Session"])
