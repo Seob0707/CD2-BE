@@ -1,6 +1,8 @@
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from api.database import Base
 from datetime import datetime
@@ -42,7 +44,7 @@ class LanguageSetting(Base):
 class User(Base):
     __tablename__ = 'user'
 
-    user_id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, primary_key=True, autoincrement=True)
     login_info = Column(String(45), nullable=False)
     Oauth = Column(String(50), nullable=True)
     Oauth_id = Column(String(100), nullable=True)
@@ -52,6 +54,7 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     modified_date = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     role = Column(String(20), nullable=False, server_default="user")
+    refresh_token = Column(String(512), nullable=True)
 
     sessions = relationship('Session', back_populates='user')  
     agree = relationship('Agree', back_populates='user', uselist=False)  

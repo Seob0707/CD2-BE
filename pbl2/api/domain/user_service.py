@@ -1,23 +1,36 @@
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
+from typing import Optional
+
 from api.models.ORM import User
 from api.core import security
+from api.schemas.user_schema import UserCreate, UserOAuthCreate
 
-async def get_user_by_email(db: AsyncSession, email: str):
+async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
     result = await db.execute(select(User).where(User.email == email))
     return result.scalars().first()
 
-async def create_user(db: AsyncSession, user_data):
-    if await get_user_by_email(db, user_data.email):
-        raise HTTPException(status_code=400, detail="이미 등록된 이메일입니다.")
-    
-    if user_data.password != user_data.confirm_pwd:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="비밀번호 확인이 일치하지 않습니다.")
-    
-    hashed_pw = security.hash_password(user_data.password)
-    
-    nickname = user_data.nickname if user_data.nickname else user_data.email
+async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
+    result = await db.execute(select(User).where(User.user_id == user_id))
+    return result.scalars().first()
+
+async def create_user(db: AsyncSession, user_data: UserCreate) -> User:
+    existing_user = await get_user_by_email(db, user_data.email)
+    if existing_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 등록된 이메일입니다.")
+
+    if hasattr(user_data, 'password') and hasattr(user_data, 'confirm_pwd'):
+        if user_data.password != user_data.confirm_pwd:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="비밀번호 확인이 일치하지 않습니다.")
+        hashed_pw = security.hash_password(user_data.password)
+    else:
+        # OAuth 등 비밀번호가 없는 경우를 대비 (UserCreate 스키마 설계에 따라 달라짐)
+        # 또는 UserCreate는 항상 비밀번호를 갖도록 강제
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="비밀번호 정보가 필요합니다.")
+
+
+    nickname = user_data.nickname if user_data.nickname else user_data.email.split('@')[0]
 
     new_user = User(
         email=user_data.email,
@@ -30,28 +43,60 @@ async def create_user(db: AsyncSession, user_data):
     await db.refresh(new_user)
     return new_user
 
-async def create_oauth_user(db: AsyncSession, user_data):
-    if await get_user_by_email(db, user_data.email):
-        return await get_user_by_email(db, user_data.email)
-    
-    dummy_password = "GooglePass1"
-    hashed_pw = security.hash_password(dummy_password)
-    nickname = user_data.nickname if user_data.nickname else user_data.email
+async def create_oauth_user(
+    db: AsyncSession,
+    user_data: UserOAuthCreate,
+    oauth_provider: str,
+    oauth_id: str,
+    refresh_token_val: Optional[str] = None
+) -> User:
+    nickname = user_data.nickname if user_data.nickname else user_data.email.split('@')[0]
 
     new_user = User(
         email=user_data.email,
-        password=hashed_pw,
         nickname=nickname,
-        login_info="google"
+        login_info=oauth_provider,
+        Oauth=oauth_provider,
+        Oauth_id=oauth_id,
+        refresh_token=refresh_token_val,
+        password=None # OAuth 사용자는 비밀번호 없음 (ORM에서 nullable=True로 설정)
     )
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
     return new_user
 
-async def authenticate_user(db: AsyncSession, email: str, password: str):
-    user = await get_user_by_email(db, email)
-    if not user or not security.verify_password(password, user.password):
-        return None
+async def update_user_oauth_details(
+    db: AsyncSession,
+    user: User,
+    nickname: str,
+    oauth_provider: str,
+    oauth_id: str,
+    new_refresh_token: Optional[str] = None
+) -> User:
+    if user.nickname != nickname:
+        user.nickname = nickname
+    user.Oauth = oauth_provider
+    user.Oauth_id = oauth_id
+    if new_refresh_token:
+        user.refresh_token = new_refresh_token
+    await db.commit()
+    await db.refresh(user)
     return user
 
+async def update_user_refresh_token(db: AsyncSession, user_id: int, refresh_token: str) -> Optional[User]:
+    user = await get_user_by_id(db, user_id)
+    if user:
+        user.refresh_token = refresh_token
+        await db.commit()
+        await db.refresh(user)
+    return user
+
+
+async def authenticate_user(db: AsyncSession, email: str, password: str) -> Optional[User]:
+    user = await get_user_by_email(db, email)
+    if not user or not user.password: # 비밀번호가 없는 사용자(예: OAuth)는 이메일/비밀번호 인증 실패
+        return None
+    if not security.verify_password(password, user.password):
+        return None
+    return user
