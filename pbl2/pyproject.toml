@@ -14,7 +14,7 @@ alembic = "^1.15.1"
 aiomysql = "^0.2.0"
 python-dotenv = "^1.0.1"
 pydantic = {version = "2.9.2", extras = ["email"]}
-passlib = {version = "1.7.4", extras = ["bcrypt"]}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 python-jose = {version = "3.3.0", extras = ["cryptography"]}
 pydantic-settings = "^2.8.1"
 httpx = "^0.28.1"
