@@ -15,7 +15,7 @@ GOOGLE_REDIRECT_URI = config("GOOGLE_REDIRECT_URI", cast=str)
 GOOGLE_TOKEN_URI = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URI = "https://www.googleapis.com/oauth2/v2/userinfo"
 
-router = APIRouter(prefix="/oauth", tags=["OAuth"])
+router = APIRouter(tags=["OAuth"])
 
 class OAuth2TokenResponse(BaseToken):
     user_id: int
