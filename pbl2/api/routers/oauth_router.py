@@ -66,11 +66,8 @@ async def google_callback(
     else:
         user = await user_service.update_user_oauth_details(db, user, nickname, "google", sub, token_data.get("refresh_token"))
     jwt_payload = {"sub": str(user.user_id), "email": user.email, "role": user.role}
-    #app_jwt_token = create_access_token(data=jwt_payload, expires_delta=timedelta(minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES))
-    # JSON으로 토큰 반환
-    #return JSONResponse({"access_token": app_jwt_token, "token_type": "bearer"})
-    app_jwt_token = create_access_token(data=jwt_payload)
-    frontend = FRONTEND_CALLBACK_URL 
+    app_jwt_token = create_access_token(data=jwt_payload, expires_delta=timedelta(minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES)) 
+    frontend = FRONTEND_CALLBACK_URL
     redirect_url = f"{frontend}?access_token={app_jwt_token}&token_type=bearer"
     return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
 
