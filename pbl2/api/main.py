@@ -45,7 +45,6 @@ app.add_middleware(
     session_cookie="pbl_cookie_id",
     max_age=14 * 24 * 3600,  # 14일 
     same_site="lax",
-    secure=False,  # HTTPS 사용 시 True로 설정
     https_only=settings.environment == "production"
 )
 
