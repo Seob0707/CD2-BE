@@ -20,7 +20,7 @@ async def login(user: user_schema.UserLogin, db: AsyncSession = Depends(get_db))
     if not db_user:
         raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 틀렸습니다.")
     
-    access_token = security.create_access_token(data={"sub": str(db_user.user_id)})
+    access_token = security.create_access_token(data={"sub": str(db_user.user_id),"role": db_user.role})
     return {"access_token": access_token}
 
 @router.get("/me")

@@ -1,17 +1,8 @@
-import os
 import bcrypt
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
-from fastapi import Depends, HTTPException, status
-from api.core.auth import get_current_user
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-if SECRET_KEY is None:
-    raise RuntimeError("환경변수 SECRET_KEY가 설정되지 않았습니다.")
-
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
-IS_TEST_SERVER = os.getenv("SERVER_ENV", "prod") == "test"
+from api.config import settings
 
 def create_access_token(
     data: dict,
@@ -22,18 +13,18 @@ def create_access_token(
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
 
     to_encode.update({
         "exp": expire,
-        "server_env": "test" if IS_TEST_SERVER else "prod"
+        "server_env": settings.environment
     })
 
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
 def decode_token(token: str) -> dict | None:
     try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
     except JWTError:
         return None
 
@@ -42,11 +33,6 @@ def get_token_origin(token: str) -> str:
     if not payload:
         return "invalid"
     return payload.get("server_env", "unknown")
-
-async def admin_required(current_user = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="관리자 권한이 필요합니다.")
-    return current_user
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     if isinstance(hashed_password, str):
