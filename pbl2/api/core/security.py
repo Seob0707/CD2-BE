@@ -2,7 +2,8 @@ import os
 import bcrypt
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
-from fastapi import Depends, HTTPException, status 
+from fastapi import Depends, HTTPException, status
+
 from api.config import settings
 from api.core.auth import get_current_user
 
@@ -11,30 +12,27 @@ def create_access_token(
     expires_delta: timedelta | None = None
 ) -> str:
     to_encode = data.copy()
-
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
-
     to_encode.update({
         "exp": expire,
-        "server_env": settings.environment 
+        "server_env": settings.environment
     })
-
     return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
 def decode_token(token: str) -> dict | None:
     try:
         return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-    except JWTError: 
+    except JWTError:
         return None
 
 def get_token_origin(token: str) -> str:
     payload = decode_token(token)
     if not payload:
         return "invalid"
-    return payload.get("server_env", "unknown") 
+    return payload.get("server_env", "unknown")
 
 async def admin_required(current_user = Depends(get_current_user)):
     if not hasattr(current_user, 'role') or current_user.role != "admin":
@@ -42,7 +40,7 @@ async def admin_required(current_user = Depends(get_current_user)):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="관리자 권한이 필요합니다."
         )
-    return current_user 
+    return current_user
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     if isinstance(hashed_password, str):
