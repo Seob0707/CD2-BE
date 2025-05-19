@@ -14,7 +14,7 @@ from api.routers.search_router import router as search_router
 from api.routers.dev_util_router import router as dev_util_router
 from api.routers.ai_router import router as ai_router
 from api.routers.admin_router import router as admin_router
-
+from api.routers.language_router import router as language_router
 from api.routers.faiss_router import router as faiss_router
 from api.routers.token_validation_router import router as token_validation_router
 from api.config import settings
@@ -89,3 +89,4 @@ app.include_router(ai_router, prefix="/api/v1/ai", tags=["AI Features"])
 app.include_router(admin_router, prefix="/api/v1/admin",tags=["Admin"],)
 app.include_router(faiss_router, prefix="/api/v1/faiss", tags=["FAISS VectorDB Service"])
 app.include_router(preference_router, prefix="/api/v1/preference", tags=["Message Preference and AI Data Exchange"])
+app.include_router(language_router.router, prefix="/api/v1/language", tags=["languages"])

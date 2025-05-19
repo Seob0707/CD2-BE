@@ -7,7 +7,7 @@ from api.domain import language_service
 from api.schemas import language_schema 
 
 router = APIRouter(
-    prefix="/languages",
+    prefix="",
     tags=["languages"]
 )
 
