@@ -122,7 +122,7 @@ async def google_callback(
         expires_delta=timedelta(minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
-    redirect_url = f"{FRONTEND_CALLBACK_URL}?access_token={app_jwt_token}&token_type=bearer"
+    redirect_url = f"{FRONTEND_CALLBACK_URL}?access_token={app_jwt_token}&token_type=bearer&user_id={user.user_id}"
     return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
 
 @router.post("/logout")
