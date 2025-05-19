@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Dict, Any, Literal, Optional
 
 class DocumentInput(BaseModel):
@@ -6,6 +6,8 @@ class DocumentInput(BaseModel):
     session_id: int
     user_id: int
     message_role: Literal["ai", "user", "feedback"]
+    target_message_id: Optional[str] = None
+    feedback_rating: Optional[Literal["like", "dislike"]] = None
 
 class AddResponse(BaseModel):
     added_ids: List[str]
@@ -22,10 +24,10 @@ class ChatMessageOutput(BaseModel):
     timestamp: str
     user_id: int
 
-    class Config:
-        allow_population_by_field_name = True
-        from_attributes = True
-
+    model_config = ConfigDict(
+        populate_by_name=True, 
+        from_attributes=True    
+    )
 
 class ConversationHistoryResponse(BaseModel):
     session_id: int
@@ -35,8 +37,9 @@ class ConversationHistoryResponse(BaseModel):
     messages: List[ChatMessageOutput]
     total_messages: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True
+    )
 
 class SessionSearchQuery(BaseModel):
     session_id: int
@@ -44,8 +47,8 @@ class SessionSearchQuery(BaseModel):
     query: str
     k: int = Field(5, gt=0)
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={ # schema_extra -> json_schema_extra
             "example": {
                 "session_id": 123,
                 "user_id": 456,
@@ -53,6 +56,7 @@ class SessionSearchQuery(BaseModel):
                 "k": 5
             }
         }
+    )
 
 class SessionSearchResult(BaseModel):
     doc_id: str
@@ -63,11 +67,12 @@ class SessionSearchResult(BaseModel):
 class KeywordSearchRequest(BaseModel):
     keyword: str = Field(min_length=1)
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "keyword": "오늘 날씨"
             }
         }
+    )
 
 Query = SessionSearchQuery
