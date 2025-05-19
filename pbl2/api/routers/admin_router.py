@@ -14,8 +14,6 @@ from api.domain.admin_service import (
 )
 
 router = APIRouter(
-    prefix="/api/v1/admin",
-    tags=["Admin"],
     dependencies=[Depends(admin_required)]
 )
 

@@ -5,10 +5,7 @@ class DocumentInput(BaseModel):
     page_content: str
     session_id: int
     user_id: int
-    message_role: Literal["ai", "user", "feedback"] 
-    # 피드백 관련 필드는 일단 주석 처리
-    # target_message_id: Optional[str] = None
-    # feedback_rating: Optional[Literal["like", "dislike"]] = None
+    message_role: Literal["ai", "user", "feedback"]
 
 class AddResponse(BaseModel):
     added_ids: List[str]
@@ -21,25 +18,31 @@ class HistoryRequest(BaseModel):
 class ChatMessageOutput(BaseModel):
     message_id: str = Field(alias="doc_id")
     content: str = Field(alias="page_content")
-    role: Literal["ai", "user", "feedback"] 
-    timestamp: str 
-    user_id: int 
+    role: Literal["ai", "user", "feedback"]
+    timestamp: str
+    user_id: int
 
     class Config:
         allow_population_by_field_name = True
-        orm_mode = True 
+        from_attributes = True
+
 
 class ConversationHistoryResponse(BaseModel):
     session_id: int
     user_id: int
+    title: Optional[str] = None
+    topics: Optional[List[str]] = None
     messages: List[ChatMessageOutput]
     total_messages: int
+
+    class Config:
+        from_attributes = True
 
 class SessionSearchQuery(BaseModel):
     session_id: int
     user_id: int
     query: str
-    k: int = Field(5)
+    k: int = Field(5, gt=0)
 
     class Config:
         schema_extra = {
@@ -56,5 +59,15 @@ class SessionSearchResult(BaseModel):
     page_content: str
     metadata: Dict[str, Any]
     score: float
+
+class KeywordSearchRequest(BaseModel):
+    keyword: str = Field(min_length=1)
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "keyword": "오늘 날씨"
+            }
+        }
 
 Query = SessionSearchQuery

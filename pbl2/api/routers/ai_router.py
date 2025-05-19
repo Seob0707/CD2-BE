@@ -4,14 +4,11 @@ from api.domain.ai_service import call_ai
 from jose import JWTError
 import httpx
 
-router = APIRouter(prefix="/api/v1/ai", tags=["AI"])
+router = APIRouter(tags=["AI"])
 
 
 @router.post("/{model_name}")
 async def proxy_to_ai(model_name: str, body: dict):
-    """
-    예: POST /api/v1/ai/generate { "prompt": "..." }
-    """
     try:
         result = await call_ai(f"/{model_name}", body)
         return result
