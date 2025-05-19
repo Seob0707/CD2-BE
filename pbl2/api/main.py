@@ -88,4 +88,4 @@ app.include_router(dev_util_router, prefix="/api/v1/dev", tags=["Developer Utili
 app.include_router(ai_router, prefix="/api/v1/ai", tags=["AI Features"])
 app.include_router(admin_router, prefix="/api/v1/admin",tags=["Admin"],)
 app.include_router(faiss_router, prefix="/api/v1/faiss", tags=["FAISS VectorDB Service"])
-app.include_router(preference_router, prefix="/api/v1/preference", tags=["Message Preference"])
+app.include_router(preference_router, prefix="/api/v1/preference", tags=["Message Preference and AI Data Exchange"])

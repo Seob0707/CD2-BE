@@ -2,12 +2,18 @@ import logging
 import uuid
 import httpx
 import os
+import hashlib
+import hmac
 from datetime import datetime, timezone
+import json
 
-from fastapi import APIRouter, HTTPException, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File, Form, Header
+from fastapi.responses import FileResponse, JSONResponse
 
-from api.schemas.preference_schemas import PreferenceInput, PreferenceResponse
+from api.schemas.preference_schemas import (
+    PreferenceInput, PreferenceSubmitResponse,
+    PreferenceFileReceiveResponse, PreferenceFileSendRequest
+)
 from api.core.auth import get_current_user
 from api.models.ORM import User as MainUser
 from api.config import settings
@@ -15,18 +21,26 @@ from api.config import settings
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    tags=["Message Preference"],
+    tags=["Message Preference and AI Data Exchange"],
 )
 
-AI_SERVER_PREFERENCE_URL = getattr(settings, "AI_SERVER_PREFERENCE_URL", "http://pbl.kro.kr:8000/feedback/{session_id}")
-PREFERENCE_DATA_FILE_PATH = getattr(settings, "PREFERENCE_DATA_FILE_PATH", "/app/data/preference_files")
+AI_SERVER_PREFERENCE_URL_TEMPLATE = getattr(settings, "AI_SERVER_PREFERENCE_URL_TEMPLATE", "http://pbl.kro.kr:8000/feedback/{session_id}")
+PREFERENCE_AI_FILES_STORAGE_PATH = getattr(settings, "PREFERENCE_AI_FILES_STORAGE_PATH", "/app/preference_related_ai_files")
 AI_SERVER_SHARED_SECRET = getattr(settings, "AI_SERVER_SHARED_SECRET", None)
 
+def verify_hmac_signature(data: bytes, received_signature: str, secret: str) -> bool:
+    if not secret:
+        logger.error("Shared secret is not configured for HMAC verification.")
+        return False
+    if not received_signature:
+        logger.warning("Received HMAC signature is missing.")
+        return False
+    computed_signature = hmac.new(secret.encode('utf-8'), data, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(computed_signature, received_signature)
 
 @router.post(
     "/submit",
-    response_model=PreferenceResponse,
-    summary="AI 메시지 선호도 제출 및 AI 서버 연동 (보안 강화)"
+    response_model=PreferenceSubmitResponse
 )
 async def submit_message_preference(
     preference_data: PreferenceInput,
@@ -36,85 +50,139 @@ async def submit_message_preference(
     timestamp_utc_iso = datetime.now(timezone.utc).isoformat()
 
     if not AI_SERVER_SHARED_SECRET:
-        logger.error("AI_SERVER_SHARED_SECRET is not configured. Cannot securely communicate with AI server.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Application is not configured correctly for secure AI server communication."
-        )
+        logger.error("AI_SERVER_SHARED_SECRET is not configured.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Application not configured for secure AI server communication.")
+
+    rating_value = preference_data.rating
 
     ai_server_payload = {
         "preference_user_id": user_id_str,
-        "target_ai_message_id": preference_data.target_message_id,
+        "target_ai_message_id": preference_data.message_id,
         "session_identifier": str(preference_data.session_id),
-        "user_preference_value": preference_data.rating,
+        "user_preference_value": rating_value,
         "preference_text": preference_data.preference_text,
         "preference_timestamp": timestamp_utc_iso
     }
 
-    headers = {
-        "X-AI-Server-Shared-Secret": AI_SERVER_SHARED_SECRET
-    }
+    try:
+        payload_bytes = json.dumps(ai_server_payload, sort_keys=True, separators=(',', ':')).encode('utf-8')
+        signature = hmac.new(AI_SERVER_SHARED_SECRET.encode('utf-8'), payload_bytes, hashlib.sha256).hexdigest()
+    except Exception as e:
+        logger.error(f"Error generating HMAC signature for AI server request: {e!r}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error preparing secure request for AI server.")
 
-    received_file_content = None
+    headers = {
+        "X-Signature-HMAC-SHA256": signature,
+        "Content-Type": "application/json"
+    }
+    actual_ai_server_url = AI_SERVER_PREFERENCE_URL_TEMPLATE.format(session_id=preference_data.session_id)
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(AI_SERVER_PREFERENCE_URL, json=ai_server_payload, headers=headers)
+            response = await client.post(actual_ai_server_url, content=payload_bytes, headers=headers)
             response.raise_for_status()
-            received_file_content = response.content
-            logger.info(f"Successfully received data file from AI server for user {user_id_str} after submitting preference for message {preference_data.target_message_id}")
+            logger.info(f"AI server responded with {response.status_code} for preference submission by user {user_id_str}")
 
     except httpx.RequestError as exc:
-        logger.error(f"Error requesting AI server for preference: {exc!r} for user {user_id_str}, message {preference_data.target_message_id}")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Could not communicate with the AI server for preference submission: {exc.__class__.__name__}"
-        )
+        logger.error(f"Error requesting AI server for preference: {exc!r}")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Could not communicate with AI server: {exc.__class__.__name__}")
     except httpx.HTTPStatusError as exc:
+        logger.error(f"AI server error for preference: {exc.response.status_code} - {exc.response.text}")
         if exc.response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]:
-            logger.error(f"AI server denied access (shared secret mismatch?): {exc.response.status_code} for user {user_id_str}")
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY, 
-                detail="Failed to authenticate with AI server. Check shared secret."
-            )
-        logger.error(f"AI server returned an error for preference: {exc.response.status_code} - {exc.response.text} for user {user_id_str}, message {preference_data.target_message_id}")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"AI server error during preference processing: {exc.response.status_code}"
-        )
+             raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="AI server rejected the request. Check signature or credentials.")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"AI server error: {exc.response.status_code}")
 
-    if received_file_content is None:
-        logger.error(f"No data file content received from AI server after preference submission for user {user_id_str}, message {preference_data.target_message_id}")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="No data file content received from AI server after preference submission."
-        )
-
-    saved_file_path_str = None
-    try:
-        os.makedirs(PREFERENCE_DATA_FILE_PATH, exist_ok=True)
-        msg_id_short = preference_data.target_message_id[:8]
-        unique_filename = f"user_{user_id_str}_session_{preference_data.session_id}_msg_{msg_id_short}_pref_{uuid.uuid4()}.dat"
-        saved_file_path = os.path.join(PREFERENCE_DATA_FILE_PATH, unique_filename)
-
-        with open(saved_file_path, "wb") as f:
-            f.write(received_file_content)
-        saved_file_path_str = saved_file_path
-        logger.info(f"Successfully saved preference-related data file to {saved_file_path_str} for user {user_id_str}, message {preference_data.target_message_id}")
-
-    except IOError as e:
-        logger.error(f"Failed to save preference-related data file to Docker volume: {e!r} for user {user_id_str}, message {preference_data.target_message_id}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save preference-related data file: {e.__class__.__name__}"
-        )
-    except Exception as e:
-        logger.error(f"An unexpected error occurred during preference file saving: {e!r} for user {user_id_str}, message {preference_data.target_message_id}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An unexpected error occurred during preference file processing: {e.__class__.__name__}"
-        )
-
-    return PreferenceResponse(
-        message="Preference submitted and data file processed successfully (securely).",
-        saved_file_path=saved_file_path_str
+    return PreferenceSubmitResponse(
+        message="Preference submitted to AI server successfully."
     )
+
+@router.post(
+    "/ai_file_upload",
+    response_model=PreferenceFileReceiveResponse
+)
+async def ai_initiated_file_upload(
+    session_id: str = Form(...),
+    file: UploadFile = File(...),
+    x_signature_hmac_sha256: str = Header(..., alias="X-Signature-HMAC-SHA256")
+):
+    if not AI_SERVER_SHARED_SECRET:
+        logger.error("AI_SERVER_SHARED_SECRET is not configured for AI file upload.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Application not configured for secure AI data exchange.")
+
+    file_content = await file.read()
+    await file.seek(0)
+
+    data_to_sign = file_content
+    if not verify_hmac_signature(data_to_sign, x_signature_hmac_sha256, AI_SERVER_SHARED_SECRET):
+        logger.warning(f"Invalid HMAC signature for AI file upload, session_id: {session_id}")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid HMAC signature.")
+
+    try:
+        os.makedirs(PREFERENCE_AI_FILES_STORAGE_PATH, exist_ok=True)
+        original_filename = file.filename if file.filename else "ai_data"
+        file_extension = os.path.splitext(original_filename)[1] if os.path.splitext(original_filename)[1] else ".dat"
+        unique_filename = f"session_{session_id}_ai_push_{uuid.uuid4()}{file_extension}"
+        saved_file_path = os.path.join(PREFERENCE_AI_FILES_STORAGE_PATH, unique_filename)
+
+        with open(saved_file_path, "wb") as buffer: buffer.write(file_content)
+        logger.info(f"AI server pushed file, saved for session_id: {session_id} at {saved_file_path}")
+        return PreferenceFileReceiveResponse(message="AI-initiated file received and saved successfully.", file_path=saved_file_path)
+    except IOError as e:
+        logger.error(f"Failed to save AI-initiated file for session_id {session_id}: {e!r}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to save AI-initiated file.")
+    except Exception as e:
+        logger.error(f"Unexpected error saving AI-initiated file for session_id {session_id}: {e!r}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred while saving AI-initiated file.")
+    finally:
+        await file.close()
+
+@router.post(
+    "/request_ai_file",
+    response_class=FileResponse
+)
+async def request_ai_file(
+    request_data: PreferenceFileSendRequest,
+    x_signature_hmac_sha256: str = Header(..., alias="X-Signature-HMAC-SHA256")
+):
+    session_id = request_data.session_id
+
+    if not AI_SERVER_SHARED_SECRET:
+        logger.error("AI_SERVER_SHARED_SECRET is not configured for AI file request.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Application not configured for secure AI data exchange.")
+
+    try:
+        payload_bytes = request_data.model_dump_json(sort_keys=True, separators=(',', ':')).encode('utf-8')
+    except Exception as e:
+        logger.error(f"Error serializing request_data for HMAC verification: {e!r}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request data format.")
+
+    if not verify_hmac_signature(payload_bytes, x_signature_hmac_sha256, AI_SERVER_SHARED_SECRET):
+        logger.warning(f"Invalid HMAC signature for AI file request, session_id: {session_id}")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid HMAC signature.")
+
+    potential_files = []
+    try:
+        target_directory = PREFERENCE_AI_FILES_STORAGE_PATH
+        if os.path.exists(target_directory):
+            for fname in os.listdir(target_directory):
+                if fname.startswith(f"session_{session_id}_ai_push_") and fname.endswith((".json", ".dat")):
+                    potential_files.append(os.path.join(target_directory, fname))
+
+        if not potential_files:
+            logger.info(f"No AI-initiated file found for session_id: {session_id} to send.")
+            return JSONResponse(content={"message": f"No AI-initiated file found for session_id: {session_id}"}, status_code=status.HTTP_404_NOT_FOUND)
+
+        latest_file = max(potential_files, key=os.path.getmtime)
+
+        logger.info(f"Sending AI-initiated file: {latest_file} for session_id: {session_id}")
+        return FileResponse(
+            path=latest_file,
+            filename=os.path.basename(latest_file),
+            media_type='application/octet-stream'
+        )
+    except FileNotFoundError:
+        logger.warning(f"File not found for sending (session_id {session_id}) after listing.")
+        return JSONResponse(content={"message": "Requested AI file not found."}, status_code=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error sending AI-initiated file for session_id {session_id}: {e!r}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error sending AI-initiated file.")

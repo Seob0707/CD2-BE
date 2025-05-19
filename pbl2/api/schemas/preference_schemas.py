@@ -2,13 +2,34 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import Literal, Optional
 
 class PreferenceInput(BaseModel):
-    target_message_id: str
+    message_id: str 
     session_id: int
     rating: Literal["like", "dislike"]
     preference_text: Optional[str] = None
 
-class PreferenceResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "message_id": "ai_msg_123", 
+                "session_id": 101,
+                "rating": "like",
+                "preference_text": "매우 유용합니다!"
+            }
+        }
+    )
+
+class PreferenceSubmitResponse(BaseModel):
     message: str
     processed_preference_id: Optional[str] = None
-    saved_file_path: Optional[str] = None
 
+class PreferenceFileReceiveResponse(BaseModel):
+    message: str
+    file_path: str
+
+class PreferenceFileSendRequest(BaseModel):
+    session_id: str
+
+class PreferenceFileInfo(BaseModel):
+    filename: str
+    content_type: Optional[str] = None
+    message: str

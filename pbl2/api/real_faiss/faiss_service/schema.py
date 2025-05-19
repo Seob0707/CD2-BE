@@ -7,7 +7,6 @@ class DocumentInput(BaseModel):
     user_id: int
     message_role: Literal["ai", "user", "feedback"]
     target_message_id: Optional[str] = None
-    feedback_rating: Optional[Literal["like", "dislike"]] = None
 
 class AddResponse(BaseModel):
     added_ids: List[str]
@@ -48,7 +47,7 @@ class SessionSearchQuery(BaseModel):
     k: int = Field(5, gt=0)
 
     model_config = ConfigDict(
-        json_schema_extra={ # schema_extra -> json_schema_extra
+        json_schema_extra={ 
             "example": {
                 "session_id": 123,
                 "user_id": 456,
