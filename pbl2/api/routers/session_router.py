@@ -78,3 +78,14 @@ async def add_topic_to_existing_session(
     if session_obj.user_id != current_user.user_id:
         raise HTTPException(status_code=403, detail="접근 권한이 없습니다.")
     return await session_service.add_topic_to_session(db, session_id, topic_data.topic_id)
+
+
+@router.delete("/user/all", status_code=status.HTTP_200_OK, summary="모든 세션 삭제")
+async def delete_all_my_sessions(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user) #
+):
+    deleted_count = await session_service.delete_all_sessions_for_user(db, current_user.user_id) # current_user.user_id는 토큰에서 추출
+    if deleted_count == 0:
+        return {"detail": "삭제할 사용자의 세션이 없습니다."}
+    return {"detail": f"총 {deleted_count}개의 세션이 삭제되었습니다."}

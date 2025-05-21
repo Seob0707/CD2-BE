@@ -100,6 +100,7 @@ async def upload_files(
         background_tasks.add_task(simulate_send_to_ai, encoded)
 
     return {
+        "session_id": session_id,
         "detail": f"{len(saved_paths)}개 파일이 성공적으로 업로드되었습니다.",
         "paths": saved_paths
     }

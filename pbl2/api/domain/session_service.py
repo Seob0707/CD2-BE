@@ -85,3 +85,21 @@ async def add_topic_to_session(db: AsyncSession, session_id: int, topic_id: int)
     db.add(new_topic_session)
     await db.commit()
     return {"detail": "주제가 추가되었습니다."}
+
+
+async def delete_all_sessions_for_user(db: AsyncSession, user_id: int) -> int:
+
+    stmt_select = select(Session).where(Session.user_id == user_id) #
+    result = await db.execute(stmt_select)
+    sessions_to_delete = result.scalars().all()
+
+    if not sessions_to_delete:
+        return 0
+
+    count = len(sessions_to_delete)
+
+    for session_obj in sessions_to_delete:
+        await db.delete(session_obj)
+
+    await db.commit()
+    return count
