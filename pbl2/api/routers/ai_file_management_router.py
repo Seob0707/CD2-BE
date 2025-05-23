@@ -13,8 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/api/v1/internal/ai_file_management",
-    tags=["Internal - AI File Management (Shared Key Auth)"]
+    
 )
 
 async def verify_backend_internal_api_key(x_backend_internal_api_key: Annotated[str | None, Header()] = None):
