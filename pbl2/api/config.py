@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = Field("uploads", alias="UPLOAD_DIR")
     AI_SERVER_URL: str = Field("http://127.0.0.1:8001/ai", alias="AI_SERVER_URL")
     AI_SERVER_TIMEOUT: int = Field(30, alias="AI_SERVER_TIMEOUT")
+    AI_SERVER_SHARED_SECRET: str | None = Field(None, alias="AI_SERVER_SHARED_SECRET")
+
+    BACKEND_INTERNAL_API_KEY: str | None = Field(None, alias="BACKEND_INTERNAL_API_KEY")
 
     PROJECT_NAME: str = "CD2 Project API"
     PROJECT_DESCRIPTION: str = "PBL CD2 프로젝트 백엔드 API 문서입니다."

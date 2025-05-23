@@ -19,6 +19,8 @@ from api.routers.token_validation_router import router as token_validation_route
 from api.real_faiss.faiss_service.router import router as faiss_actual_router
 from api.routers.preference_router import router as preference_router
 
+from api.routers.ai_file_management_router import router as ai_file_management_router
+
 from api.config import settings
 from api.real_faiss.faiss_service import crud as faiss_crud
 
@@ -126,3 +128,5 @@ app.include_router(admin_router, prefix="/api/v1/admin",tags=["Admin"],)
 app.include_router(faiss_actual_router, prefix="/api/v1/faiss", tags=["FAISS VectorDB Service"])
 app.include_router(preference_router, prefix="/api/v1/preference", tags=["Message Preference and AI Data Exchange"])
 app.include_router(language_router, prefix="/api/v1/language", tags=["languages"])
+
+app.include_router(ai_file_management_router)
