@@ -5,7 +5,7 @@ class DocumentInput(BaseModel):
     page_content: str
     session_id: int
     user_id: int
-    message_role: Literal["ai", "user", "feedback"]
+    message_role: Literal["user", "optimize", "report", "hitl_user", "hitl_ai"]
     target_message_id: Optional[str] = None
 
 class AddResponse(BaseModel):
@@ -19,7 +19,7 @@ class HistoryRequest(BaseModel):
 class ChatMessageOutput(BaseModel):
     message_id: str = Field(alias="doc_id")
     content: str = Field(alias="page_content")
-    role: Literal["ai", "user", "feedback"]
+    role: Literal["user", "optimize", "report", "hitl_user", "hitl_ai"]
     timestamp: str
     user_id: int
 
