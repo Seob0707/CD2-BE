@@ -54,7 +54,9 @@ jobs:
             echo "IMAGE_TAG: ${{ env.IMAGE_TAG }}"
             cd "${{ env.PROJECT_DIR_ON_EC2 }}"
             sed -i "s|^DOCKER_IMAGE=.*|DOCKER_IMAGE=${{ env.DOCKER_HUB_USERNAME }}/backend:${{ env.IMAGE_TAG }}|" .env
-            sudo docker compose -f docker-compose-backend.yaml pull backend
-            sudo docker compose -f docker-compose-backend.yaml up -d --no-deps backend
+            
+            sudo docker compose -f docker-compose-backend.yaml -f docker-compose-nginx.yaml pull
+            sudo docker compose -f docker-compose-backend.yaml -f docker-compose-nginx.yaml up -d --build
+            
             sudo docker image prune -af
           EOF
