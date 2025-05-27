@@ -25,8 +25,6 @@ async def create_user(db: AsyncSession, user_data: UserCreate) -> User:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="비밀번호 확인이 일치하지 않습니다.")
         hashed_pw = security.hash_password(user_data.password)
     else:
-        # OAuth 등 비밀번호가 없는 경우를 대비 (UserCreate 스키마 설계에 따라 달라짐)
-        # 또는 UserCreate는 항상 비밀번호를 갖도록 강제
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="비밀번호 정보가 필요합니다.")
 
 
@@ -84,7 +82,7 @@ async def update_user_oauth_details(
     await db.refresh(user)
     return user
 
-async def update_user_refresh_token(db: AsyncSession, user_id: int, refresh_token: str) -> Optional[User]:
+async def update_user_refresh_token(db: AsyncSession, user_id: int, refresh_token: str | None) -> Optional[User]: # refresh_token이 None일 수 있도록 변경
     user = await get_user_by_id(db, user_id)
     if user:
         user.refresh_token = refresh_token
@@ -95,7 +93,7 @@ async def update_user_refresh_token(db: AsyncSession, user_id: int, refresh_toke
 
 async def authenticate_user(db: AsyncSession, email: str, password: str) -> Optional[User]:
     user = await get_user_by_email(db, email)
-    if not user or not user.password: # 비밀번호가 없는 사용자(예: OAuth)는 이메일/비밀번호 인증 실패
+    if not user or not user.password: 
         return None
     if not security.verify_password(password, user.password):
         return None

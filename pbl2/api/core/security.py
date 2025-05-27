@@ -22,6 +22,22 @@ def create_access_token(
     })
     return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
+def create_refresh_token(
+    data: dict,
+    expires_delta: timedelta | None = None
+) -> str:
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
+    to_encode.update({
+        "exp": expire,
+        "server_env": settings.environment, 
+        "type": "refresh"
+    })
+    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+
 def decode_token(token: str) -> dict | None:
     try:
         return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])

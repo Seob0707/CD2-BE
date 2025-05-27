@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     secret_key: str = Field("default_secret", alias="SECRET_KEY")
     algorithm: str = Field("HS256", alias="ALGORITHM")
     access_token_expire_minutes: int = Field(60, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    refresh_token_expire_days: int = Field(7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
+    
     db_ssl_ca: str | None = Field(None, alias="DB_SSL_CA")
     db_ssl_cert: str | None = Field(None, alias="DB_SSL_CERT")
     db_ssl_key: str | None = Field(None, alias="DB_SSL_KEY")
