@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from api.schemas import user_schema
@@ -7,7 +7,7 @@ from api.domain import user_service
 from api.core import security
 from api.core.auth import get_current_user
 from api.models.ORM import User
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 router = APIRouter()
 
@@ -18,6 +18,7 @@ async def signup(user: user_schema.UserCreate, db: AsyncSession = Depends(get_db
 
 @router.post("/login", response_model=user_schema.Token)
 async def login(
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)
 ):
@@ -42,11 +43,19 @@ async def login(
 
     await user_service.update_user_refresh_token(db, db_user.user_id, refresh_token)
 
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=security.settings.environment == "production",
+        samesite="Lax",
+        expires=(datetime.utcnow() + refresh_token_expires).timestamp()
+    )
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "user_id": db_user.user_id,
-        "refresh_token": refresh_token 
     }
 
 @router.get("/me")
@@ -58,11 +67,20 @@ async def read_my_profile(current_user: User = Depends(get_current_user)):
         "created_at": current_user.created_at
     }
 
-oauth2_scheme_refresh = OAuth2PasswordBearer(tokenUrl="/api/v1/user/refresh-token")
+async def get_refresh_token_from_cookie(request: Request) -> str:
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="리프레시 토큰 쿠키가 없습니다.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return refresh_token
 
 @router.post("/refresh-token", response_model=user_schema.Token, summary="리프레시 토큰으로 액세스 토큰 갱신")
 async def refresh_access_token(
-    refresh_token: str = Depends(oauth2_scheme_refresh),
+    response: Response,
+    refresh_token: str = Depends(get_refresh_token_from_cookie),
     db: AsyncSession = Depends(get_db)
 ):
     credentials_exception = HTTPException(
@@ -71,7 +89,6 @@ async def refresh_access_token(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    # 리프레시 토큰 디코딩
     token_data = security.decode_token(refresh_token)
     if not token_data or token_data.get("type") != "refresh":
         raise credentials_exception
@@ -89,6 +106,7 @@ async def refresh_access_token(
     if not user or user.refresh_token != refresh_token:
         if user and user.refresh_token:
             await user_service.update_user_refresh_token(db, user.user_id, None)
+        response.delete_cookie("refresh_token")
         raise credentials_exception
 
     access_token_expires = timedelta(minutes=security.settings.access_token_expire_minutes)
@@ -102,20 +120,29 @@ async def refresh_access_token(
         data={"sub": str(user.user_id)},
         expires_delta=new_refresh_token_expires
     )
-    
     await user_service.update_user_refresh_token(db, user.user_id, new_refresh_token)
+
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        secure=security.settings.environment == "production",
+        samesite="Lax",
+        expires=(datetime.utcnow() + new_refresh_token_expires).timestamp()
+    )
 
     return {
         "access_token": new_access_token,
         "token_type": "bearer",
         "user_id": user.user_id,
-        "refresh_token": new_refresh_token
     }
 
 @router.post("/logout", summary="사용자 로그아웃 (리프레시 토큰 무효화 포함)")
 async def logout(
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     await user_service.update_user_refresh_token(db, current_user.user_id, None)
+    response.delete_cookie("refresh_token")
     return {"message": "로그아웃 성공. 리프레시 토큰이 무효화되었습니다."}
