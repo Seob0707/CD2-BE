@@ -57,7 +57,7 @@ async def create_oauth_user(
         Oauth=oauth_provider,
         Oauth_id=oauth_id,
         refresh_token=refresh_token_val,
-        password=None # OAuth 사용자는 비밀번호 없음 (ORM에서 nullable=True로 설정)
+        password=None 
     )
     db.add(new_user)
     await db.commit()
@@ -82,7 +82,7 @@ async def update_user_oauth_details(
     await db.refresh(user)
     return user
 
-async def update_user_refresh_token(db: AsyncSession, user_id: int, refresh_token: str | None) -> Optional[User]: # refresh_token이 None일 수 있도록 변경
+async def update_user_refresh_token(db: AsyncSession, user_id: int, refresh_token: str | None) -> Optional[User]:
     user = await get_user_by_id(db, user_id)
     if user:
         user.refresh_token = refresh_token
