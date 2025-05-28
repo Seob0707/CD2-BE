@@ -37,7 +37,7 @@ async def login(
 
     refresh_token_expires = timedelta(days=security.settings.refresh_token_expire_days)
     refresh_token = security.create_refresh_token(
-        data={"sub": str(db_user.user_id)},
+        data={"sub": str(db_user.user_id), "type": "refresh"},
         expires_delta=refresh_token_expires
     )
 
@@ -117,7 +117,7 @@ async def refresh_access_token(
 
     new_refresh_token_expires = timedelta(days=security.settings.refresh_token_expire_days)
     new_refresh_token = security.create_refresh_token(
-        data={"sub": str(user.user_id)},
+        data={"sub": str(user.user_id), "type": "refresh"},
         expires_delta=new_refresh_token_expires
     )
     await user_service.update_user_refresh_token(db, user.user_id, new_refresh_token)
