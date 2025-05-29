@@ -86,7 +86,7 @@ ORIGINS = [
     "https://pbl.kro.kr",
     "https://cd2-fe.vercel.app",
     os.getenv("AI_SERVER_URL_FOR_CORS", settings.AI_SERVER_URL),
-    "https:pblai.r-e.kr"
+    "https://pblai.r-e.kr"
 ]
 
 app.add_middleware(

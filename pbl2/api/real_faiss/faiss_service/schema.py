@@ -22,7 +22,8 @@ class ChatMessageOutput(BaseModel):
     role: Literal["user", "optimize", "report", "hitl_user", "hitl_ai"]
     timestamp: str
     user_id: int
-
+    positive_weighted_indices: Optional[List[int]] = Field(None, description="추천 평가 시 가중치가 부여된 질문 인덱스 리스트")
+    negative_weighted_indices: Optional[List[int]] = Field(None, description="비추천 평가 시 가중치가 부여된 질문 인덱스 리스트")
     model_config = ConfigDict(
         populate_by_name=True, 
         from_attributes=True    

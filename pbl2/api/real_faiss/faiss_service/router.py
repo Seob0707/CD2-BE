@@ -12,7 +12,6 @@ from api.database import get_db
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    #tags=["FAISS Service Operations"],
 )
 
 @router.get("/health", response_model=dict)

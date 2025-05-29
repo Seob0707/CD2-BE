@@ -15,9 +15,10 @@ class Settings(BaseSettings):
     db_ssl_key: str | None = Field(None, alias="DB_SSL_KEY")
 
     UPLOAD_DIR: str = Field("uploads", alias="UPLOAD_DIR")
-    AI_SERVER_URL: str = Field("http://127.0.0.1:8001/ai", alias="AI_SERVER_URL")
+    AI_SERVER_URL: str = Field("https://pblai.r-e.kr", alias="AI_SERVER_URL")
     AI_SERVER_TIMEOUT: int = Field(30, alias="AI_SERVER_TIMEOUT")
     AI_SERVER_SHARED_SECRET: str | None = Field(None, alias="AI_SERVER_SHARED_SECRET")
+    AI_SERVER_PREFERENCE_URL_TEMPLATE: str = Field("https://pblai.r-e.kr/feedback/{session_id}", alias="AI_SERVER_PREFERENCE_URL_TEMPLATE")
 
     BACKEND_INTERNAL_API_KEY: str | None = Field(None, alias="BACKEND_INTERNAL_API_KEY")
 
