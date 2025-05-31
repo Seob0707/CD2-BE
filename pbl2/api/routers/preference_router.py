@@ -4,8 +4,9 @@ import httpx
 import os
 import hashlib
 import hmac
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
+from jose import jwt, JWTError
 
 from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File, Form, Header
 from fastapi.responses import FileResponse, JSONResponse
@@ -30,6 +31,9 @@ PREFERENCE_AI_FILES_STORAGE_PATH = getattr(settings, "PREFERENCE_AI_FILES_STORAG
 AI_SERVER_SHARED_SECRET = getattr(settings, "AI_SERVER_SHARED_SECRET", None)
 AI_SERVER_PREFERENCE_URL_TEMPLATE = getattr(settings,"AI_SERVER_PREFERENCE_URL_TEMPLATE","https://pblai.r-e.kr/feedback/{session_id}" 
 )
+JWT_ALGORITHM_FOR_AI_SERVER = getattr(settings, "algorithm", "HS256") 
+JWT_EXPIRE_MINUTES_FOR_AI_SERVER = 5
+
 
 def verify_hmac_signature(data: bytes, received_signature: str, secret: str) -> bool:
     if not secret:
@@ -40,6 +44,30 @@ def verify_hmac_signature(data: bytes, received_signature: str, secret: str) -> 
         return False
     computed_signature = hmac.new(secret.encode('utf-8'), data, hashlib.sha256).hexdigest()
     return hmac.compare_digest(computed_signature, received_signature)
+
+def create_jwt_for_ai_server(
+    user_id: int, 
+    shared_secret: str,
+    algorithm: str,
+    expires_delta_minutes: int,
+    server_environment: str,
+    custom_claims: Optional[dict] = None
+) -> str:
+    to_encode = custom_claims.copy() if custom_claims else {}
+    expire = datetime.now(timezone.utc) + timedelta(minutes=expires_delta_minutes)
+    
+    to_encode.update({
+        "sub": str(user_id),
+        "exp": expire,
+        "iss": "backend", 
+        "server_env": server_environment
+    })
+    
+    if not shared_secret:
+        raise ValueError("Cannot create JWT for AI server: AI_SERVER_SHARED_SECRET is not set.")
+        
+    encoded_jwt = jwt.encode(to_encode, shared_secret, algorithm=algorithm)
+    return encoded_jwt
 
 
 @router.post(
@@ -53,7 +81,7 @@ async def submit_message_preference(
     user_id_int = current_user.user_id
 
     if not AI_SERVER_SHARED_SECRET:
-        logger.error("AI_SERVER_SHARED_SECRET is not configured.")
+        logger.error("AI_SERVER_SHARED_SECRET is not configured for AI server communication.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail="Application not configured for secure AI server communication."
@@ -61,8 +89,31 @@ async def submit_message_preference(
     
     recommand_value = True if preference_data.rating == "like" else False
     
+    try:
+        ai_specific_claims = {}
+        ai_server_token = create_jwt_for_ai_server(
+            user_id=user_id_int,
+            shared_secret=AI_SERVER_SHARED_SECRET,
+            algorithm=JWT_ALGORITHM_FOR_AI_SERVER,
+            expires_delta_minutes=JWT_EXPIRE_MINUTES_FOR_AI_SERVER,
+            server_environment=settings.environment,
+            custom_claims=ai_specific_claims
+        )
+    except ValueError as e:
+        logger.error(f"Failed to create JWT for AI server: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to prepare secure token for AI server."
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error creating JWT for AI server: {e!r}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unexpected error preparing secure token for AI server."
+        )
+        
     ai_server_payload = {
-        "token": AI_SERVER_SHARED_SECRET,
+        "token": ai_server_token, 
         "message_id": preference_data.message_id,
         "recommand": recommand_value,
     }
