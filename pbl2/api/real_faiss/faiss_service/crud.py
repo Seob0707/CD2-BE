@@ -72,7 +72,6 @@ def save_db():
 def _convert_indices_to_bitmask(indices: Optional[List[int]]) -> int:
     if not indices:
         return 0
-    
     bitmask = 0
     for index in indices:
         if 1 <= index <= 30: 
@@ -85,12 +84,10 @@ def _convert_bitmask_to_indices(bitmask: int) -> List[int]:
     indices = []
     if bitmask == 0:
         return indices
-    
     for i in range(30):
         if (bitmask >> i) & 1:
             indices.append(i + 1)
     return indices
-
 
 async def add_faiss_documents(documents: List[schema.DocumentInput]) -> List[str]:
     if db is None:
@@ -104,13 +101,19 @@ async def add_faiss_documents(documents: List[schema.DocumentInput]) -> List[str
             "user_id": doc_input.user_id,
             "message_role": doc_input.message_role,
             "time": now_utc_iso,
-            "positive_evaluation_bitmask": 0, 
-            "negative_evaluation_bitmask": 0,
+            "evaluation_bitmask": 0,
+            "recommendation_status": None,
         }
 
         if hasattr(doc_input, 'target_message_id') and doc_input.target_message_id is not None:
              metadata["target_message_id"] = doc_input.target_message_id
         
+        if doc_input.evaluation_indices:
+            metadata["evaluation_bitmask"] = _convert_indices_to_bitmask(doc_input.evaluation_indices)
+        
+        if doc_input.recommendation_status:
+            metadata["recommendation_status"] = doc_input.recommendation_status
+
         docs_to_add.append(Document(page_content=doc_input.page_content, metadata=metadata))
 
     if not docs_to_add:
@@ -119,52 +122,38 @@ async def add_faiss_documents(documents: List[schema.DocumentInput]) -> List[str
     save_db()
     return added_ids
 
-async def update_message_evaluation_bitmasks(
+async def update_recommendation_status(
     message_id: str, 
-    question_indices: List[int], 
-    rating: Literal["like", "dislike"]
+    status: Literal["like", "dislike"]
 ) -> bool:
     global db
     if db is None:
         logger.error("FAISS DB not initialized. Cannot update document metadata.")
         return False
     
-    if not isinstance(db.docstore, InMemoryDocstore):
-        logger.error("Metadata update is currently only supported for InMemoryDocstore.")
-        return False
-
-    if not hasattr(db.docstore, '_dict') or not isinstance(db.docstore._dict, dict):
-        logger.error("InMemoryDocstore does not have a _dict attribute or it's not a dict. Cannot update metadata.")
+    if not isinstance(db.docstore, InMemoryDocstore) or not hasattr(db.docstore, '_dict'):
+        logger.error("Docstore is not a valid InMemoryDocstore. Cannot update metadata.")
         return False
 
     if message_id not in db.docstore._dict:
-        logger.warning(f"Message with doc_id '{message_id}' not found in FAISS docstore. Cannot update bitmasks.")
+        logger.warning(f"Message with doc_id '{message_id}' not found in FAISS docstore. Cannot update status.")
         return False
             
     try:
-        new_bitmask = _convert_indices_to_bitmask(question_indices)
         document_to_update = db.docstore._dict[message_id]
         
         if not hasattr(document_to_update, 'metadata') or not isinstance(document_to_update.metadata, dict):
-            logger.warning(f"Document with doc_id '{message_id}' has missing or invalid metadata. Initializing new metadata dict.")
-            document_to_update.metadata = {} 
-        
-        if rating == "like":
-            document_to_update.metadata["positive_evaluation_bitmask"] = new_bitmask
-            document_to_update.metadata["negative_evaluation_bitmask"] = 0 
-        elif rating == "dislike":
-            document_to_update.metadata["negative_evaluation_bitmask"] = new_bitmask
-            document_to_update.metadata["positive_evaluation_bitmask"] = 0
-        else:
-            logger.warning(f"Invalid rating value '{rating}' received for message_id '{message_id}'. No bitmask updated.")
+            logger.warning(f"Document with doc_id '{message_id}' has no metadata. Cannot update status.")
             return False
-            
+        
+        document_to_update.metadata["recommendation_status"] = status
+        
         save_db()
-        logger.info(f"Successfully updated evaluation_bitmask (rating: {rating}) for doc_id '{message_id}' to {new_bitmask} and saved DB.")
+        logger.info(f"Successfully updated recommendation_status for doc_id '{message_id}' to '{status}'.")
         return True
         
     except Exception as e:
-        logger.error(f"Error updating evaluation_bitmasks for doc_id '{message_id}': {e!r}", exc_info=True)
+        logger.error(f"Error updating recommendation_status for doc_id '{message_id}': {e!r}", exc_info=True)
         return False
 
 async def get_conversation_history_by_session(
@@ -216,16 +205,13 @@ async def get_conversation_history_by_session(
         role_value = md.get("message_role")
         if role_value not in schema.ChatMessageOutput.model_fields["role"].annotation.__args__:
             role_value = "user"
-
-        positive_indices: Optional[List[int]] = None
-        positive_bitmask = md.get("positive_evaluation_bitmask")
-        if isinstance(positive_bitmask, int) and positive_bitmask != 0: 
-            positive_indices = _convert_bitmask_to_indices(positive_bitmask)
-
-        negative_indices: Optional[List[int]] = None
-        negative_bitmask = md.get("negative_evaluation_bitmask")
-        if isinstance(negative_bitmask, int) and negative_bitmask != 0:
-            negative_indices = _convert_bitmask_to_indices(negative_bitmask)
+        
+        evaluation_indices: Optional[List[int]] = None
+        bitmask = md.get("evaluation_bitmask", 0)
+        if bitmask != 0:
+            evaluation_indices = _convert_bitmask_to_indices(bitmask)
+        
+        recommendation_status = md.get("recommendation_status")
 
         chat_messages.append(schema.ChatMessageOutput(
             doc_id=msg_id,
@@ -233,8 +219,8 @@ async def get_conversation_history_by_session(
             role=role_value,
             timestamp=msg_time,
             user_id=md.get("user_id"),
-            positive_weighted_indices=positive_indices,
-            negative_weighted_indices=negative_indices
+            evaluation_indices=evaluation_indices,
+            recommendation_status=recommendation_status
         ))
 
     return schema.ConversationHistoryResponse(
@@ -279,7 +265,6 @@ def search_faiss_session(session_id: int, user_id: int, query: str, k: int) -> L
         if len(results) >= k:
             break
     return results[:k]
-
 
 async def get_sessions_by_keyword(
     user_id: int,

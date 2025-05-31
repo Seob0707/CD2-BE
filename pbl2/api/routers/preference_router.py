@@ -50,9 +50,7 @@ async def submit_message_preference(
     preference_data: PreferenceInput,
     current_user: MainUser = Depends(get_current_user)
 ):
-    user_id_int = current_user.user_id 
-    session_id_int = preference_data.session_id
-    timestamp_utc_iso = datetime.now(timezone.utc).isoformat()
+    user_id_int = current_user.user_id
 
     if not AI_SERVER_SHARED_SECRET:
         logger.error("AI_SERVER_SHARED_SECRET is not configured.")
@@ -60,84 +58,27 @@ async def submit_message_preference(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail="Application not configured for secure AI server communication."
         )
+    
     recommand_value = True if preference_data.rating == "like" else False
+    
     ai_server_payload = {
-        "user_id": user_id_int,
+        "token": AI_SERVER_SHARED_SECRET,
         "message_id": preference_data.message_id,
-        "session_id": session_id_int, 
-        "recommand": recommand_value, 
-        "preference_text": preference_data.preference_text,
-        "timestamp": timestamp_utc_iso
+        "recommand": recommand_value,
     }
 
-    try:
-        payload_bytes = json.dumps(ai_server_payload, sort_keys=True, separators=(',', ':')).encode('utf-8')
-        signature = hmac.new(AI_SERVER_SHARED_SECRET.encode('utf-8'), payload_bytes, hashlib.sha256).hexdigest()
-    except Exception as e:
-        logger.error(f"Error generating HMAC signature for AI server request: {e!r}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="Error preparing secure request for AI server."
-        )
-
     headers = {
-        "X-Signature-HMAC-SHA256": signature,
         "Content-Type": "application/json"
     }
     actual_ai_server_url = AI_SERVER_PREFERENCE_URL_TEMPLATE.format(session_id=preference_data.session_id)
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(actual_ai_server_url, content=payload_bytes, headers=headers)
+            response = await client.post(actual_ai_server_url, json=ai_server_payload, headers=headers)
             response.raise_for_status()
-            
-            try:
-                ai_response_data = response.json() 
-                weighted_question_indices = ai_response_data.get("weighted_question_indices") 
-                
-                if (weighted_question_indices is not None and 
-                    isinstance(weighted_question_indices, list) and 
-                    preference_data.message_id):
-                    
-                    updated_successfully = await crud.update_message_evaluation_bitmasks(
-                        message_id=preference_data.message_id, 
-                        question_indices=weighted_question_indices,
-                        rating=preference_data.rating 
-                    )
-                    
-                    if updated_successfully:
-                        logger.info(
-                            f"Successfully updated evaluation bitmasks for message {preference_data.message_id} "
-                            f"with rating '{preference_data.rating}'."
-                        )
-                    else:
-                        logger.warning(
-                            f"Failed to update evaluation bitmasks for message {preference_data.message_id} "
-                            f"in FAISS (rating: '{preference_data.rating}')."
-                        )
-                elif weighted_question_indices is None:
-                    logger.info(
-                        f"AI server response for message {preference_data.message_id} "
-                        f"(rating: {preference_data.rating}) did not include 'weighted_question_indices'. "
-                        f"No FAISS update performed for bitmasks."
-                    )
-                
-            except (json.JSONDecodeError, KeyError) as e:
-                logger.error(
-                    f"AI server response ({response.status_code}) for preference was not in the expected "
-                    f"JSON format or missing fields: {e!r}. Response body: {response.text[:500]}..."
-                )
-            except Exception as e_faiss: 
-                logger.error(
-                    f"Error updating FAISS metadata for message {preference_data.message_id} "
-                    f"after AI server feedback: {e_faiss!r}", exc_info=True
-                )
-            
             logger.info(
-                f"AI server responded with {response.status_code} for preference submission "
-                f"by user {user_id_int}"
+                f"AI server responded with {response.status_code} for preference submission by user {user_id_int}"
             )
-
     except httpx.RequestError as exc:
         logger.error(f"Error requesting AI server for preference: {exc!r}")
         raise HTTPException(
@@ -155,15 +96,19 @@ async def submit_message_preference(
             status_code=status.HTTP_502_BAD_GATEWAY, 
             detail=f"AI server error: {exc.response.status_code}"
         )
-    except Exception as e: 
-        logger.error(f"Unexpected error during preference submission process: {e!r}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="An unexpected error occurred during the preference submission process."
-        )
     
+    try:
+        updated_in_faiss = await crud.update_recommendation_status(
+            message_id=preference_data.message_id,
+            status=preference_data.rating
+        )
+        if not updated_in_faiss:
+            logger.warning(f"Could not update recommendation_status in FAISS for message {preference_data.message_id}.")
+    except Exception as e:
+        logger.error(f"An error occurred during FAISS recommendation_status update: {e!r}", exc_info=True)
+
     return PreferenceSubmitResponse(
-        message="Preference submitted to AI server successfully."
+        message="Preference notification sent to AI server successfully."
     )
 
 
@@ -176,7 +121,6 @@ async def ai_initiated_file_upload(
     file: UploadFile = File(...),
     x_signature_hmac_sha256: str = Header(..., alias="X-Signature-HMAC-SHA256")
 ):
-
     if not AI_SERVER_SHARED_SECRET:
         logger.error("AI_SERVER_SHARED_SECRET is not configured for AI file upload.")
         raise HTTPException(
@@ -233,7 +177,6 @@ async def request_ai_file(
     request_data: PreferenceFileSendRequest,
     x_signature_hmac_sha256: str = Header(..., alias="X-Signature-HMAC-SHA256")
 ):
-    """AI 파일 요청"""
     session_id = request_data.session_id
 
     if not AI_SERVER_SHARED_SECRET:

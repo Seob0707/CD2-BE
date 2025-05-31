@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Literal, Optional
+from typing import Literal, Optional, List
 
 class PreferenceInput(BaseModel):
     message_id: str 
