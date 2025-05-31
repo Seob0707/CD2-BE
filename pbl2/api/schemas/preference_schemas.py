@@ -10,7 +10,7 @@ class PreferenceInput(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "message_id": "ai_msg_123", 
+                "message_id": "faiss_doc_id_2",
                 "session_id": 101,
                 "rating": "like",
                 "preference_text": "매우 유용합니다!"

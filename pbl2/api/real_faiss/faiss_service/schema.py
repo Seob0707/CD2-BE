@@ -7,8 +7,8 @@ class DocumentInput(BaseModel):
     user_id: int
     message_role: Literal["user", "optimize", "report", "hitl_user", "hitl_ai"]
     target_message_id: Optional[str] = None
-    evaluation_indices: Optional[List[int]] = Field(None)
-    recommendation_status: Optional[Literal["like", "dislike"]] = Field(None)
+    evaluation_indices: Optional[List[int]] = Field(None, description="AI가 평가한 항목 인덱스 리스트 (1~30)")
+    recommendation_status: Optional[Literal["like", "dislike"]] = Field(None, description="추천(like), 비추천(dislike), 또는 미설정(null) 상태")
 
 class AddResponse(BaseModel):
     added_ids: List[str]
@@ -19,13 +19,14 @@ class HistoryRequest(BaseModel):
     user_id: int
 
 class ChatMessageOutput(BaseModel):
-    message_id: str = Field(alias="doc_id")
+    message_id: str
     content: str = Field(alias="page_content")
     role: Literal["user", "optimize", "report", "hitl_user", "hitl_ai"]
     timestamp: str
     user_id: int
-    evaluation_indices: Optional[List[int]] = Field(None)
-    recommendation_status: Optional[Literal["like", "dislike"]] = Field(None)
+    evaluation_indices: Optional[List[int]] = Field(None, description="저장된 평가 항목 인덱스 리스트")
+    recommendation_status: Optional[Literal["like", "dislike"]] = Field(None, description="저장된 추천/비추천 상태")
+
     model_config = ConfigDict(
         populate_by_name=True, 
         from_attributes=True    
@@ -61,7 +62,7 @@ class SessionSearchQuery(BaseModel):
     )
 
 class SessionSearchResult(BaseModel):
-    doc_id: str
+    message_id: str
     page_content: str
     metadata: Dict[str, Any]
     score: float
@@ -76,5 +77,18 @@ class KeywordSearchRequest(BaseModel):
             }
         }
     )
+
+class MessageUpdateRequest(BaseModel):
+    message_id: str = Field(description="수정할 메시지의 고유 ID")
+    new_page_content: str = Field(description="새로운 메시지 내용")
+
+class MessageUpdateResponse(BaseModel):
+    message_id: str
+    message: str
+
+class MessageDeleteResponse(BaseModel):
+    message_id: str
+    message: str
+
 
 Query = SessionSearchQuery

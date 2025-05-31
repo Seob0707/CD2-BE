@@ -113,3 +113,47 @@ async def search_sessions_by_keyword_endpoint(
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Service Unavailable: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during keyword session search.")
+
+@router.patch("/message", response_model=schema.MessageUpdateResponse)
+async def update_message_content(
+    request: schema.MessageUpdateRequest,
+    current_user: MainUser = Depends(get_current_user)
+):
+    if crud.db is None or not hasattr(crud.db.docstore, '_dict'):
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="FAISS service is not available.")
+
+    message_id = request.message_id
+    if message_id not in crud.db.docstore._dict:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Message with message_id '{message_id}' not found.")
+
+    doc_metadata = crud.db.docstore._dict[message_id].metadata
+    if doc_metadata.get("user_id") != current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to edit this message.")
+
+    success = await crud.update_faiss_document(message_id, request.new_page_content)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update message.")
+        
+    return schema.MessageUpdateResponse(message_id=message_id, message="Message updated successfully.")
+
+
+@router.delete("/message/{message_id}", response_model=schema.MessageDeleteResponse)
+async def delete_message(
+    message_id: str,
+    current_user: MainUser = Depends(get_current_user)
+):
+    if crud.db is None or not hasattr(crud.db.docstore, '_dict'):
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="FAISS service is not available.")
+
+    if message_id not in crud.db.docstore._dict:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Message with message_id '{message_id}' not found.")
+        
+    doc_metadata = crud.db.docstore._dict[message_id].metadata
+    if doc_metadata.get("user_id") != current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to delete this message.")
+        
+    success = await crud.delete_faiss_document(message_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete message.")
+
+    return schema.MessageDeleteResponse(message_id=message_id, message="Message deleted successfully.")

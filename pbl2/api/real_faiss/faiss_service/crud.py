@@ -136,24 +136,72 @@ async def update_recommendation_status(
         return False
 
     if message_id not in db.docstore._dict:
-        logger.warning(f"Message with doc_id '{message_id}' not found in FAISS docstore. Cannot update status.")
+        logger.warning(f"Message with message_id '{message_id}' not found in FAISS docstore. Cannot update status.")
         return False
             
     try:
         document_to_update = db.docstore._dict[message_id]
         
         if not hasattr(document_to_update, 'metadata') or not isinstance(document_to_update.metadata, dict):
-            logger.warning(f"Document with doc_id '{message_id}' has no metadata. Cannot update status.")
+            logger.warning(f"Document with message_id '{message_id}' has no metadata. Cannot update status.")
             return False
         
         document_to_update.metadata["recommendation_status"] = status
         
         save_db()
-        logger.info(f"Successfully updated recommendation_status for doc_id '{message_id}' to '{status}'.")
+        logger.info(f"Successfully updated recommendation_status for message_id '{message_id}' to '{status}'.")
         return True
         
     except Exception as e:
-        logger.error(f"Error updating recommendation_status for doc_id '{message_id}': {e!r}", exc_info=True)
+        logger.error(f"Error updating recommendation_status for message_id '{message_id}': {e!r}", exc_info=True)
+        return False
+
+async def update_faiss_document(message_id: str, new_page_content: str) -> bool:
+    global db
+    if db is None or not isinstance(db.docstore, InMemoryDocstore) or not hasattr(db.docstore, '_dict'):
+        logger.error("FAISS DB is not ready for document update.")
+        return False
+
+    if message_id not in db.docstore._dict:
+        logger.warning(f"Document with message_id '{message_id}' not found for update.")
+        return False
+    
+    try:
+        original_doc = db.docstore._dict[message_id]
+        metadata = original_doc.metadata
+        
+        new_doc = Document(page_content=new_page_content, metadata=metadata)
+        
+        delete_result = db.delete([message_id])
+        if not delete_result:
+            logger.error(f"Failed to delete old document '{message_id}' during update process.")
+            return False
+
+        db.add_documents([new_doc], ids=[message_id])
+        
+        save_db()
+        logger.info(f"Successfully updated document '{message_id}'.")
+        return True
+    except Exception as e:
+        logger.error(f"An error occurred while updating document '{message_id}': {e!r}", exc_info=True)
+        return False
+
+async def delete_faiss_document(message_id: str) -> bool:
+    global db
+    if db is None:
+        logger.error("FAISS DB is not ready for document deletion.")
+        return False
+
+    try:
+        if db.delete([message_id]):
+            save_db()
+            logger.info(f"Successfully deleted document '{message_id}'.")
+            return True
+        else:
+            logger.warning(f"Document with message_id '{message_id}' could not be deleted (might not exist).")
+            return False
+    except Exception as e:
+        logger.error(f"An error occurred while deleting document '{message_id}': {e!r}", exc_info=True)
         return False
 
 async def get_conversation_history_by_session(
@@ -214,7 +262,7 @@ async def get_conversation_history_by_session(
         recommendation_status = md.get("recommendation_status")
 
         chat_messages.append(schema.ChatMessageOutput(
-            doc_id=msg_id,
+            message_id=msg_id,
             page_content=doc_obj.page_content,
             role=role_value,
             timestamp=msg_time,
@@ -256,7 +304,7 @@ def search_faiss_session(session_id: int, user_id: int, query: str, k: int) -> L
                            break
             if found_doc_id:
                 results.append(schema.SessionSearchResult(
-                    doc_id=found_doc_id,
+                    message_id=found_doc_id,
                     page_content=doc_obj_from_search.page_content,
                     metadata=md,
                     score=score
