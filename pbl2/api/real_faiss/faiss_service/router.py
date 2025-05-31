@@ -24,7 +24,8 @@ async def health_check_faiss_service():
 @router.post("/add", response_model=schema.AddResponse, status_code=status.HTTP_201_CREATED)
 async def add_documents_to_faiss_endpoint(
     documents: List[schema.DocumentInput],
-    current_user: MainUser = Depends(get_current_user)
+    current_user: MainUser = Depends(get_current_user),
+    db_sql: AsyncSession = Depends(get_db) 
 ):
     if not documents:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No documents provided to add.")
@@ -35,7 +36,7 @@ async def add_documents_to_faiss_endpoint(
                 detail=f"Document user_id {doc_input.user_id} does not match authenticated user_id {current_user.user_id}."
             )
     try:
-        added_ids = await crud.add_faiss_documents(documents)
+        added_ids = await crud.add_faiss_documents(documents, db_sql)
         return schema.AddResponse(added_ids=added_ids, message=f"Successfully added {len(added_ids)} messages.")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"FAISS DB Service Unavailable: {str(e)}")

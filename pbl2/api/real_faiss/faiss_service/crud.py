@@ -16,6 +16,7 @@ from sqlalchemy.orm import selectinload
 from . import schema
 from api.models.ORM import Session as OrmSession, Topic as OrmTopic
 
+
 logger = logging.getLogger(__name__)
 
 DB_PATH = os.getenv("FAISS_DB_PATH", "./db")
@@ -89,12 +90,24 @@ def _convert_bitmask_to_indices(bitmask: int) -> List[int]:
             indices.append(i + 1)
     return indices
 
-async def add_faiss_documents(documents: List[schema.DocumentInput]) -> List[str]:
+async def add_faiss_documents(documents: List[schema.DocumentInput], db_sql: AsyncSession) -> List[str]:
     if db is None:
         raise ValueError("FAISS DB not initialized. Cannot add documents.")
 
     docs_to_add: List[Document] = []
+    session_to_update = None
+    first_user_message_content = None
+
     for doc_input in documents:
+        if doc_input.message_role == 'user' and not first_user_message_content:
+            first_user_message_content = doc_input.page_content
+            
+            result = await db_sql.execute(select(OrmSession).where(OrmSession.session_id == doc_input.session_id))
+            session_obj = result.scalars().first()
+            
+            if session_obj and session_obj.title == "새로운 대화":
+                session_to_update = session_obj
+
         now_utc_iso = datetime.now(timezone.utc).isoformat()
         metadata = {
             "session_id": doc_input.session_id,
@@ -104,21 +117,23 @@ async def add_faiss_documents(documents: List[schema.DocumentInput]) -> List[str
             "evaluation_bitmask": 0,
             "recommendation_status": None,
         }
-
         if hasattr(doc_input, 'target_message_id') and doc_input.target_message_id is not None:
              metadata["target_message_id"] = doc_input.target_message_id
-        
         if doc_input.evaluation_indices:
             metadata["evaluation_bitmask"] = _convert_indices_to_bitmask(doc_input.evaluation_indices)
-        
         if doc_input.recommendation_status:
             metadata["recommendation_status"] = doc_input.recommendation_status
-
         docs_to_add.append(Document(page_content=doc_input.page_content, metadata=metadata))
 
     if not docs_to_add:
         return []
     added_ids = await db.aadd_documents(docs_to_add, ids=None)
+    
+    if session_to_update and first_user_message_content:
+        session_to_update.title = first_user_message_content[:50]
+        await db_sql.commit()
+        logger.info(f"Session {session_to_update.session_id} title updated to '{session_to_update.title}'.")
+
     save_db()
     return added_ids
 

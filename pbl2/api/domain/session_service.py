@@ -50,17 +50,31 @@ async def request_ai_server_delete_session_data(session_id: int):
         logger.error(f"AI 서버 데이터 삭제 중 예상치 못한 오류 (세션 {session_id}): {str(e)}", exc_info=True)
 
 async def create_session(db: AsyncSession, user_id: int, session_data) -> Session:
-    title = session_data.title
+    title = session_data.title if session_data.title else "새로운 대화"
+
+    new_session = Session(user_id=user_id, title=title)
+    db.add(new_session)
+    await db.commit()
+    await db.refresh(new_session)
+
     if session_data.topic_id:
-        result = await db.execute(select(Topic).where(Topic.topic_id == session_data.topic_id))
-        topic_obj = result.scalars().first()
+        topic_obj_result = await db.execute(select(Topic).where(Topic.topic_id == session_data.topic_id))
+        topic_obj = topic_obj_result.scalars().first()
         if not topic_obj:
             raise HTTPException(status_code=404, detail="선택한 주제를 찾을 수 없습니다.")
-        if not title:
-            title = topic_obj.topic_name
+        
+        new_topic_session = TopicSession(topic_id=session_data.topic_id, session_id=new_session.session_id)
+        db.add(new_topic_session)
+        await db.commit()
     
-    if not title:
-        title = "Untitled Session"
+    stmt = (
+        select(Session)
+        .options(selectinload(Session.topics))
+        .where(Session.session_id == new_session.session_id)
+    )
+    result = await db.execute(stmt)
+    created_session_with_details = result.unique().scalars().first()
+    return created_session_with_details if created_session_with_details else new_session
 
     new_session = Session(user_id=user_id, title=title)
     db.add(new_session)
