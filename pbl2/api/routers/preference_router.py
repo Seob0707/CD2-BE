@@ -20,6 +20,7 @@ from api.models.ORM import User as MainUser
 from api.config import settings
 
 from api.real_faiss.faiss_service import crud
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
