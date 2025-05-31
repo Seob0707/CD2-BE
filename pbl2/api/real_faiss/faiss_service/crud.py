@@ -303,11 +303,19 @@ def search_faiss_session(session_id: int, user_id: int, query: str, k: int) -> L
                            found_doc_id = id_key
                            break
             if found_doc_id:
+                evaluation_indices: Optional[List[int]] = None
+                bitmask = md.get("evaluation_bitmask", 0)
+                if bitmask != 0:
+                    evaluation_indices = _convert_bitmask_to_indices(bitmask)
+
                 results.append(schema.SessionSearchResult(
                     message_id=found_doc_id,
                     page_content=doc_obj_from_search.page_content,
-                    metadata=md,
-                    score=score
+                    score=score,
+                    timestamp=md.get("time"),
+                    message_role=md.get("message_role"),
+                    evaluation_indices=evaluation_indices,
+                    recommendation_status=md.get("recommendation_status")
                 ))
                 seen_doc_ids.add(found_doc_id)
         if len(results) >= k:
@@ -356,3 +364,45 @@ async def get_sessions_by_keyword(
         except Exception as e:
             logger.error(f"Error fetching history for session_id {session_id_val} (user_id: {user_id}) during keyword search: {e}", exc_info=True)
     return sessions_history
+
+async def ai_update_document(
+    message_id: str,
+    new_page_content: Optional[str] = None,
+    new_evaluation_indices: Optional[List[int]] = None,
+    new_recommendation_status: Optional[Literal["like", "dislike", "none"]] = None
+) -> bool:
+    global db
+    if db is None or not isinstance(db.docstore, InMemoryDocstore) or not hasattr(db.docstore, '_dict'):
+        logger.error("FAISS DB is not ready for AI document update.")
+        return False
+
+    if message_id not in db.docstore._dict:
+        logger.warning(f"Document with message_id '{message_id}' not found for AI update.")
+        return False
+    
+    try:
+        doc = db.docstore._dict[message_id]
+        metadata = doc.metadata
+
+        if new_evaluation_indices is not None:
+            metadata["evaluation_bitmask"] = _convert_indices_to_bitmask(new_evaluation_indices)
+        
+        if new_recommendation_status is not None:
+            if new_recommendation_status == "none":
+                metadata["recommendation_status"] = None
+            else:
+                metadata["recommendation_status"] = new_recommendation_status
+
+        if new_page_content is not None and doc.page_content != new_page_content:
+            new_doc = Document(page_content=new_page_content, metadata=metadata)
+            db.delete([message_id])
+            db.add_documents([new_doc], ids=[message_id])
+        else:
+            doc.metadata = metadata
+
+        save_db()
+        logger.info(f"AI server successfully updated document '{message_id}'.")
+        return True
+    except Exception as e:
+        logger.error(f"An error occurred while AI was updating document '{message_id}': {e!r}", exc_info=True)
+        return False

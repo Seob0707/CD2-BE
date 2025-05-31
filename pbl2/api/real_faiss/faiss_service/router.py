@@ -157,3 +157,27 @@ async def delete_message(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete message.")
 
     return schema.MessageDeleteResponse(message_id=message_id, message="Message deleted successfully.")
+
+@router.post("/ai-update", response_model=schema.AIMessageUpdateResponse)
+async def ai_update_message(
+    request: schema.AIMessageUpdateRequest,
+    x_signature_hmac_sha256: str = Header(..., alias="X-Signature-HMAC-SHA256")
+):
+    if not crud.AI_SERVER_SHARED_SECRET:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Application not configured for secure AI server communication.")
+    
+    payload_bytes = request.model_dump_json(sort_keys=True, separators=(',', ':')).encode('utf-8')
+    if not crud.verify_hmac_signature(payload_bytes, x_signature_hmac_sha256, crud.AI_SERVER_SHARED_SECRET):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid HMAC signature.")
+
+    success = await crud.ai_update_document(
+        message_id=request.message_id,
+        new_page_content=request.new_page_content,
+        new_evaluation_indices=request.new_evaluation_indices,
+        new_recommendation_status=request.new_recommendation_status
+    )
+
+    if not success:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update message via AI request.")
+        
+    return schema.AIMessageUpdateResponse(message_id=request.message_id, message="Message updated successfully by AI server.")

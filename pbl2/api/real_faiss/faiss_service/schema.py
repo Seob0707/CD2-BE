@@ -64,8 +64,11 @@ class SessionSearchQuery(BaseModel):
 class SessionSearchResult(BaseModel):
     message_id: str
     page_content: str
-    metadata: Dict[str, Any]
     score: float
+    timestamp: str
+    message_role: str
+    evaluation_indices: Optional[List[int]]
+    recommendation_status: Optional[Literal["like", "dislike"]]
 
 class KeywordSearchRequest(BaseModel):
     keyword: str = Field(min_length=1)
@@ -90,5 +93,15 @@ class MessageDeleteResponse(BaseModel):
     message_id: str
     message: str
 
+
+class AIMessageUpdateRequest(BaseModel):
+    message_id: str
+    new_page_content: Optional[str] = Field(None)
+    new_evaluation_indices: Optional[List[int]] = Field(None)
+    new_recommendation_status: Optional[Literal["like", "dislike", "none"]] = Field(None)
+
+class AIMessageUpdateResponse(BaseModel):
+    message_id: str
+    message: str
 
 Query = SessionSearchQuery
