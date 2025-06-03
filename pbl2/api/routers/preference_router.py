@@ -55,17 +55,9 @@ async def submit_message_preference(
         "Content-Type": "application/json"
     }
     actual_ai_server_url = AI_SERVER_PREFERENCE_URL_TEMPLATE.format(session_id=preference_data.session_id)
-    logger.info(f"=== AI Server Request Debug ===")
-    logger.info(f"URL: {actual_ai_server_url}")
-    logger.info(f"Payload: {ai_server_payload}")
-    logger.info(f"Headers: {headers}")
-    logger.info(f"================================")
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(actual_ai_server_url, json=ai_server_payload, headers=headers)
-            logger.info(f"Response Status: {response.status_code}")
-            logger.info(f"Response Headers: {dict(response.headers)}")
-            logger.info(f"Response Body: {response.text}")
             response.raise_for_status()
             logger.info(
                 f"AI server responded with {response.status_code} for preference submission by user {user_id_int}"
