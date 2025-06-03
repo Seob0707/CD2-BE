@@ -27,7 +27,7 @@ class PreferenceFileReceiveResponse(BaseModel):
     file_path: str
 
 class PreferenceFileSendRequest(BaseModel):
-    session_id: str
+    session_id: int
 
 class PreferenceFileInfo(BaseModel):
     filename: str
