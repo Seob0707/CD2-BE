@@ -4,6 +4,7 @@ import httpx
 import os
 import hashlib
 import hmac
+import base64
 from datetime import datetime, timezone
 import json
 
@@ -31,15 +32,31 @@ AI_SERVER_SHARED_SECRET = getattr(settings, "AI_SERVER_SHARED_SECRET", None)
 AI_SERVER_PREFERENCE_URL_TEMPLATE = getattr(settings,"AI_SERVER_PREFERENCE_URL_TEMPLATE","https://pblai.r-e.kr/feedback/{session_id}" 
 )
 
-def verify_hmac_signature(data: bytes, received_signature: str, secret: str) -> bool:
-    if not secret:
+def generate_hmac(data: str) -> str:
+    return base64.b64encode(hmac.new(AI_SERVER_SHARED_SECRET.encode(), data.encode(), hashlib.sha256).digest()).decode()
+
+def verify_hmac_signature(data: str, received_signature: str) -> bool:
+    if not AI_SERVER_SHARED_SECRET:
         logger.error("Shared secret is not configured for HMAC verification.")
         return False
     if not received_signature:
         logger.warning("Received HMAC signature is missing.")
         return False
-    computed_signature = hmac.new(secret.encode('utf-8'), data, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(computed_signature, received_signature)
+    expected_signature = generate_hmac(data)
+    return hmac.compare_digest(expected_signature, received_signature)
+
+def generate_hmac_bytes(data: bytes) -> str:
+    return base64.b64encode(hmac.new(AI_SERVER_SHARED_SECRET.encode(), data, hashlib.sha256).digest()).decode()
+
+def verify_hmac_signature_bytes(data: bytes, received_signature: str) -> bool:
+    if not AI_SERVER_SHARED_SECRET:
+        logger.error("Shared secret is not configured for HMAC verification.")
+        return False
+    if not received_signature:
+        logger.warning("Received HMAC signature is missing.")
+        return False
+    expected_signature = generate_hmac_bytes(data)
+    return hmac.compare_digest(expected_signature, received_signature)
 
 @router.post(
     "/submit",
@@ -126,8 +143,7 @@ async def ai_initiated_file_upload(
     file_content = await file.read()
     await file.seek(0)
 
-    data_to_sign = file_content
-    if not verify_hmac_signature(data_to_sign, x_signature_hmac_sha256, AI_SERVER_SHARED_SECRET):
+    if not verify_hmac_signature_bytes(file_content, x_signature_hmac_sha256):
         logger.warning(f"Invalid HMAC signature for AI file upload, session_id: {session_id}")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid HMAC signature.")
 
@@ -181,7 +197,7 @@ async def request_ai_file(
         )
 
     try:
-        payload_bytes = request_data.model_dump_json(sort_keys=True, separators=(',', ':')).encode('utf-8')
+        payload_json = request_data.model_dump_json(sort_keys=True, separators=(',', ':'))
     except Exception as e:
         logger.error(f"Error serializing request_data for HMAC verification: {e!r}")
         raise HTTPException(
@@ -189,7 +205,7 @@ async def request_ai_file(
             detail="Invalid request data format."
         )
 
-    if not verify_hmac_signature(payload_bytes, x_signature_hmac_sha256, AI_SERVER_SHARED_SECRET):
+    if not verify_hmac_signature(payload_json, x_signature_hmac_sha256):
         logger.warning(f"Invalid HMAC signature for AI file request, session_id: {session_id}")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid HMAC signature.")
 

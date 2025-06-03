@@ -34,11 +34,14 @@ def is_allowed_file(filename: str) -> bool:
     ext = os.path.splitext(filename)[1].lower()
     return ext in ALLOWED_EXTENSIONS
 
-def verify_hmac(data: bytes, received_signature: str, secret: str) -> bool:
-    if not secret:
+def generate_hmac(data: str) -> str:
+    return base64.b64encode(hmac.new(settings.AI_SERVER_SHARED_SECRET.encode(), data.encode(), hashlib.sha256).digest()).decode()
+
+def verify_hmac(data: str, received_hmac: str) -> bool:
+    if not settings.AI_SERVER_SHARED_SECRET:
         return False
-    computed_signature = hmac.new(secret.encode('utf-8'), data, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(computed_signature, received_signature)
+    expected_hmac = generate_hmac(data)
+    return hmac.compare_digest(expected_hmac, received_hmac)
 
 async def verify_ai_request_signature(request: Request):
     try:
@@ -53,9 +56,9 @@ async def verify_ai_request_signature(request: Request):
         if abs(current_timestamp - request_timestamp) > 60:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="타임스탬프가 유효하지 않습니다.")
 
-        message_to_sign = f"{request_timestamp_str}.{request.url.path}".encode('utf-8')
+        message_to_sign = f"{request_timestamp_str}.{request.url.path}"
         
-        if not verify_hmac(message_to_sign, request_signature, settings.AI_SERVER_SHARED_SECRET):
+        if not verify_hmac(message_to_sign, request_signature):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="시그니처가 일치하지 않습니다.")
 
     except (ValueError, TypeError):
