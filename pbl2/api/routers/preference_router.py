@@ -2,11 +2,7 @@ import logging
 import uuid
 import httpx
 import os
-import hashlib
-import hmac
-import base64
 from datetime import datetime, timezone
-import json
 
 from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File, Form, Header
 from fastapi.responses import FileResponse, JSONResponse
@@ -16,11 +12,11 @@ from api.schemas.preference_schemas import (
     PreferenceFileReceiveResponse, PreferenceFileSendRequest
 )
 from api.core.auth import get_current_user, oauth2_scheme
+from api.core.security import verify_hmac_signature, verify_hmac_signature_bytes, serialize_pydantic_for_hmac
 from api.models.ORM import User as MainUser
 from api.config import settings
 
 from api.real_faiss.faiss_service import crud
-
 
 logger = logging.getLogger(__name__)
 
@@ -32,32 +28,6 @@ PREFERENCE_AI_FILES_STORAGE_PATH = getattr(settings, "PREFERENCE_AI_FILES_STORAG
 AI_SERVER_SHARED_SECRET = getattr(settings, "AI_SERVER_SHARED_SECRET", None)
 AI_SERVER_PREFERENCE_URL_TEMPLATE = getattr(settings,"AI_SERVER_PREFERENCE_URL_TEMPLATE","https://pblai.r-e.kr/feedback/{session_id}" 
 )
-
-def generate_hmac(data: str) -> str:
-    return base64.b64encode(hmac.new(AI_SERVER_SHARED_SECRET.encode(), data.encode(), hashlib.sha256).digest()).decode()
-
-def verify_hmac_signature(data: str, received_signature: str) -> bool:
-    if not AI_SERVER_SHARED_SECRET:
-        logger.error("Shared secret is not configured for HMAC verification.")
-        return False
-    if not received_signature:
-        logger.warning("Received HMAC signature is missing.")
-        return False
-    expected_signature = generate_hmac(data)
-    return hmac.compare_digest(expected_signature, received_signature)
-
-def generate_hmac_bytes(data: bytes) -> str:
-    return base64.b64encode(hmac.new(AI_SERVER_SHARED_SECRET.encode(), data, hashlib.sha256).digest()).decode()
-
-def verify_hmac_signature_bytes(data: bytes, received_signature: str) -> bool:
-    if not AI_SERVER_SHARED_SECRET:
-        logger.error("Shared secret is not configured for HMAC verification.")
-        return False
-    if not received_signature:
-        logger.warning("Received HMAC signature is missing.")
-        return False
-    expected_signature = generate_hmac_bytes(data)
-    return hmac.compare_digest(expected_signature, received_signature)
 
 @router.post(
     "/submit",
@@ -198,8 +168,7 @@ async def request_ai_file(
         )
 
     try:
-        payload_dict = request_data.model_dump()
-        payload_json = json.dumps(payload_dict, sort_keys=True, separators=(',', ':'))
+        payload_json = request_data.model_dump_json(sort_keys=True, separators=(',', ':'))
     except Exception as e:
         logger.error(f"Error serializing request_data for HMAC verification: {e!r}")
         raise HTTPException(

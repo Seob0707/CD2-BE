@@ -1,8 +1,13 @@
 import os
 import bcrypt
+import hmac
+import hashlib
+import base64
+import json
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from fastapi import Depends, HTTPException, status
+from pydantic import BaseModel
 
 from api.config import settings
 from api.core.auth import get_current_user
@@ -67,3 +72,44 @@ def get_password_hash(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 hash_password = get_password_hash
+
+def generate_hmac(data: str, secret: str = None) -> str:
+    secret_key = secret or settings.AI_SERVER_SHARED_SECRET
+    if not secret_key:
+        raise ValueError("HMAC secret key is not configured")
+    return base64.b64encode(
+        hmac.new(secret_key.encode(), data.encode(), hashlib.sha256).digest()
+    ).decode()
+
+def generate_hmac_bytes(data: bytes, secret: str = None) -> str:
+    secret_key = secret or settings.AI_SERVER_SHARED_SECRET
+    if not secret_key:
+        raise ValueError("HMAC secret key is not configured")
+    return base64.b64encode(
+        hmac.new(secret_key.encode(), data, hashlib.sha256).digest()
+    ).decode()
+
+def verify_hmac_signature(data: str, received_signature: str, secret: str = None) -> bool:
+    if not received_signature:
+        return False
+    try:
+        expected_signature = generate_hmac(data, secret)
+        return hmac.compare_digest(expected_signature, received_signature)
+    except ValueError:
+        return False
+
+def verify_hmac_signature_bytes(data: bytes, received_signature: str, secret: str = None) -> bool:
+    if not received_signature:
+        return False
+    try:
+        expected_signature = generate_hmac_bytes(data, secret)
+        return hmac.compare_digest(expected_signature, received_signature)
+    except ValueError:
+        return False
+
+def serialize_json_for_hmac(data: dict) -> str:
+    return json.dumps(data, sort_keys=True, separators=(',', ':'))
+
+def serialize_pydantic_for_hmac(model: BaseModel) -> str:
+    data_dict = model.model_dump()
+    return serialize_json_for_hmac(data_dict)

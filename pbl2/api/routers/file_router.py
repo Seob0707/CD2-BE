@@ -5,8 +5,6 @@ import base64
 import shutil
 import asyncio
 import time
-import hmac
-import hashlib
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status, Request
 from fastapi.responses import JSONResponse
@@ -15,9 +13,9 @@ from sqlalchemy.future import select
 
 from api.database import get_db
 from api.core.auth import get_current_user
+from api.core.security import verify_hmac_signature
 from api.models.ORM import User, Session
 from api.config import settings
-import json
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -35,15 +33,6 @@ def is_allowed_file(filename: str) -> bool:
     ext = os.path.splitext(filename)[1].lower()
     return ext in ALLOWED_EXTENSIONS
 
-def generate_hmac(data: str) -> str:
-    return base64.b64encode(hmac.new(settings.AI_SERVER_SHARED_SECRET.encode(), data.encode(), hashlib.sha256).digest()).decode()
-
-def verify_hmac(data: str, received_hmac: str) -> bool:
-    if not settings.AI_SERVER_SHARED_SECRET:
-        return False
-    expected_hmac = generate_hmac(data)
-    return hmac.compare_digest(expected_hmac, received_hmac)
-
 async def verify_ai_request_signature(request: Request):
     try:
         request_timestamp_str = request.headers.get("X-Signature-Timestamp")
@@ -59,7 +48,7 @@ async def verify_ai_request_signature(request: Request):
 
         message_to_sign = f"{request_timestamp_str}.{request.url.path}"
         
-        if not verify_hmac(message_to_sign, request_signature):
+        if not verify_hmac_signature(message_to_sign, request_signature):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="시그니처가 일치하지 않습니다.")
 
     except (ValueError, TypeError):
