@@ -12,6 +12,7 @@ from fastapi import HTTPException
 from api.models.ORM import Session, Topic, TopicSession
 from sqlalchemy.orm import selectinload
 from api.config import settings
+from api.schemas.session_schema import SessionOut, TopicInfo
 
 logger = logging.getLogger(__name__)
 
@@ -114,17 +115,30 @@ async def get_session_by_id(db: AsyncSession, session_id: int):
     result = await db.execute(stmt)
     return result.unique().scalars().first()
 
-async def update_session(db: AsyncSession, session_id: int, update_data) -> Session:
+async def update_session(db: AsyncSession, session_id: int, update_data) -> SessionOut:
     session_obj = await get_session_by_id(db, session_id)
     if not session_obj:
         raise HTTPException(status_code=404, detail="세션을 찾을 수 없습니다.")
     
     if update_data.title is not None:
         session_obj.title = update_data.title
-    
+
     await db.commit()
     await db.refresh(session_obj, attribute_names=['topics'])
-    return session_obj
+
+    return SessionOut(
+        session_id=session_obj.session_id,
+        user_id=session_obj.user_id,
+        title=session_obj.title,
+        created_at=session_obj.created_at,
+        modify_at=session_obj.modify_at,
+        topics=[
+            TopicInfo(
+                topic_id=topic.topic_id,
+                topic_name=topic.topic_name
+            ) for topic in session_obj.topics
+        ]
+    )
 
 async def delete_session(db: AsyncSession, session_id: int):
     session_obj = await db.get(Session, session_id)
