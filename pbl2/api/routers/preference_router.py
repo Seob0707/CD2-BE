@@ -21,6 +21,7 @@ from api.config import settings
 
 from api.real_faiss.faiss_service import crud
 
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
@@ -197,7 +198,8 @@ async def request_ai_file(
         )
 
     try:
-        payload_json = request_data.model_dump_json(sort_keys=True, separators=(',', ':'))
+        payload_dict = request_data.model_dump()
+        payload_json = json.dumps(payload_dict, sort_keys=True, separators=(',', ':'))
     except Exception as e:
         logger.error(f"Error serializing request_data for HMAC verification: {e!r}")
         raise HTTPException(

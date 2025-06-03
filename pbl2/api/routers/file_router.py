@@ -17,6 +17,7 @@ from api.database import get_db
 from api.core.auth import get_current_user
 from api.models.ORM import User, Session
 from api.config import settings
+import json
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
