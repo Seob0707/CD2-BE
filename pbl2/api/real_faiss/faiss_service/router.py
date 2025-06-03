@@ -1,6 +1,6 @@
 import logging
-from typing import List
-from fastapi import APIRouter, HTTPException, Depends, status, Header
+from typing import List, Optional, Union
+from fastapi import APIRouter, HTTPException, Depends, status, Header, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import crud
@@ -13,6 +13,27 @@ from api.config import settings
 
 router = APIRouter()
 
+async def get_current_user_or_ai(
+    authorization: Optional[str] = Header(None),
+    x_signature_hmac_sha256: Optional[str] = Header(None, alias="X-Signature-HMAC-SHA256"),
+    db_sql: AsyncSession = Depends(get_db)
+) -> Union[MainUser, dict]:
+    if x_signature_hmac_sha256:
+        if not settings.AI_SERVER_SHARED_SECRET:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="AI server communication not configured."
+            )
+        return {"is_ai_server": True, "user_id": "ai_server"}
+    
+    if authorization:
+        return await get_current_user(authorization.replace("Bearer ", ""), db_sql)
+    
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="No valid authentication provided"
+    )
+
 @router.get("/health", response_model=dict)
 async def health_check_faiss_service():
     if crud.db is None or not hasattr(crud.db, 'index'):
@@ -22,24 +43,74 @@ async def health_check_faiss_service():
 @router.post("/add", response_model=schema.AddResponse, status_code=status.HTTP_201_CREATED)
 async def add_documents_to_faiss_endpoint(
     documents: List[schema.DocumentInput],
-    current_user: MainUser = Depends(get_current_user),
-    db_sql: AsyncSession = Depends(get_db)
+    current_user_or_ai: Union[MainUser, dict] = Depends(get_current_user_or_ai),
+    db_sql: AsyncSession = Depends(get_db),
+    request: Request = None,
+    x_signature_hmac_sha256: Optional[str] = Header(None, alias="X-Signature-HMAC-SHA256")
 ):
-    if not documents:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No documents provided to add.")
-    for doc_input in documents:
-        if doc_input.user_id != current_user.user_id:
+    is_ai_request = isinstance(current_user_or_ai, dict) and current_user_or_ai.get("is_ai_server")
+    
+    if is_ai_request:
+        logging.info(f"=== AI FAISS ADD REQUEST DEBUG ===")
+        logging.info(f"Documents count: {len(documents)}")
+        logging.info(f"Client IP: {request.client.host if request and request.client else 'Unknown'}")
+        logging.info(f"=====================================")
+        
+        try:
+            payload_json = serialize_pydantic_for_hmac(documents)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid request data format."
+            )
+        
+        if not verify_hmac_signature(payload_json, x_signature_hmac_sha256):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Document user_id {doc_input.user_id} does not match authenticated user_id {current_user.user_id}."
+                detail="Invalid HMAC signature."
             )
+        
+        success_message = f"Successfully added {{}} messages via AI server."
+    else:
+        current_user = current_user_or_ai
+        logging.info(f"=== FAISS ADD REQUEST DEBUG ===")
+        logging.info(f"User ID: {current_user.user_id}")
+        logging.info(f"Documents count: {len(documents)}")
+        logging.info(f"Client IP: {request.client.host if request and request.client else 'Unknown'}")
+        logging.info(f"================================")
+        
+        for doc_input in documents:
+            if doc_input.user_id != current_user.user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Document user_id {doc_input.user_id} does not match authenticated user_id {current_user.user_id}."
+                )
+        
+        success_message = f"Successfully added {{}} messages."
+    
+    if not documents:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No documents provided to add."
+        )
+    
     try:
         added_ids = await crud.add_faiss_documents(documents, db_sql)
-        return schema.AddResponse(added_ids=added_ids, message=f"Successfully added {len(added_ids)} messages.")
+        return schema.AddResponse(
+            added_ids=added_ids, 
+            message=success_message.format(len(added_ids))
+        )
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"FAISS DB Service Unavailable: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
+            detail=f"FAISS DB Service Unavailable: {str(e)}"
+        )
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error in FAISS service.")
+        logging.error(f"FAISS add error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Internal server error in FAISS service."
+        )
 
 @router.post("/history", response_model=schema.ConversationHistoryResponse)
 async def get_session_history_endpoint(
