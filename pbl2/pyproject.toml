@@ -25,6 +25,7 @@ langchain-openai = "^0.3.16"
 authlib = "^1.5.2"
 itsdangerous = "^2.2.0"
 apscheduler = "^3.11.0"
+aiofiles = "^24.1.0"
 
 
 [build-system]
