@@ -1,4 +1,7 @@
 import logging
+import base64
+import hashlib
+import hmac
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends, status, Header
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,11 +11,18 @@ from . import schema
 from api.core.auth import get_current_user
 from api.models.ORM import User as MainUser
 from api.database import get_db
+from api.config import settings
 
-logger = logging.getLogger(__name__)
+router = APIRouter()
 
-router = APIRouter(
-)
+def generate_hmac(data: str) -> str:
+    return base64.b64encode(hmac.new(settings.AI_SERVER_SHARED_SECRET.encode(), data.encode(), hashlib.sha256).digest()).decode()
+
+def verify_hmac_signature(data: str, received_signature: str) -> bool:
+    if not settings.AI_SERVER_SHARED_SECRET or not received_signature:
+        return False
+    expected_signature = generate_hmac(data)
+    return hmac.compare_digest(expected_signature, received_signature)
 
 @router.get("/health", response_model=dict)
 async def health_check_faiss_service():
@@ -20,12 +30,11 @@ async def health_check_faiss_service():
         return {"status": "unhealthy", "message": "FAISS DB not initialized or index is missing."}
     return {"status": "ok", "message": "FAISS service is operational."}
 
-
 @router.post("/add", response_model=schema.AddResponse, status_code=status.HTTP_201_CREATED)
 async def add_documents_to_faiss_endpoint(
     documents: List[schema.DocumentInput],
     current_user: MainUser = Depends(get_current_user),
-    db_sql: AsyncSession = Depends(get_db) 
+    db_sql: AsyncSession = Depends(get_db)
 ):
     if not documents:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No documents provided to add.")
@@ -42,7 +51,6 @@ async def add_documents_to_faiss_endpoint(
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"FAISS DB Service Unavailable: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error in FAISS service.")
-
 
 @router.post("/history", response_model=schema.ConversationHistoryResponse)
 async def get_session_history_endpoint(
@@ -67,7 +75,6 @@ async def get_session_history_endpoint(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch conversation history.")
 
-
 @router.post("/search/session", response_model=List[schema.SessionSearchResult])
 async def search_within_session_endpoint(
     query_request: schema.SessionSearchQuery,
@@ -91,11 +98,7 @@ async def search_within_session_endpoint(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Session search failed.")
 
-
-@router.post(
-    "/search/keyword/sessions",
-    response_model=List[schema.ConversationHistoryResponse]
-)
+@router.post("/search/keyword/sessions", response_model=List[schema.ConversationHistoryResponse])
 async def search_sessions_by_keyword_endpoint(
     request: schema.KeywordSearchRequest,
     current_user: MainUser = Depends(get_current_user),
@@ -137,7 +140,6 @@ async def update_message_content(
         
     return schema.MessageUpdateResponse(message_id=message_id, message="Message updated successfully.")
 
-
 @router.delete("/message/{message_id}", response_model=schema.MessageDeleteResponse)
 async def delete_message(
     message_id: str,
@@ -164,11 +166,11 @@ async def ai_update_message(
     request: schema.AIMessageUpdateRequest,
     x_signature_hmac_sha256: str = Header(..., alias="X-Signature-HMAC-SHA256")
 ):
-    if not crud.AI_SERVER_SHARED_SECRET:
+    if not settings.AI_SERVER_SHARED_SECRET:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Application not configured for secure AI server communication.")
     
-    payload_bytes = request.model_dump_json(sort_keys=True, separators=(',', ':')).encode('utf-8')
-    if not crud.verify_hmac_signature(payload_bytes, x_signature_hmac_sha256, crud.AI_SERVER_SHARED_SECRET):
+    payload_json = request.model_dump_json(sort_keys=True, separators=(',', ':'))
+    if not verify_hmac_signature(payload_json, x_signature_hmac_sha256):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid HMAC signature.")
 
     success = await crud.ai_update_document(
