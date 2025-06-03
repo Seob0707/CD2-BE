@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     API_VERSION: str = "1.0.0"
 
     TEMP_FILE_TTL_HOURS: int = Field(3, alias="TEMP_FILE_TTL_HOURS", description="임시 파일 삭제 주기 (시간 단위)")
-    CLEANUP_JOB_INTERVAL_HOURS: int = Field(1, alias="CLEANUP_JOB_INTERVAL_HOURS", description="임시 파일 정리 작업 실행 간격 (시간 단위)")
+    CLEANUP_JOB_INTERVAL_HOURS: int = Field(3, alias="CLEANUP_JOB_INTERVAL_HOURS", description="임시 파일 정리 작업 실행 간격 (시간 단위)")
 
     model_config = SettingsConfigDict(
         env_file=".env",
