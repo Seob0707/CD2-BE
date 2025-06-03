@@ -112,7 +112,7 @@ async def submit_message_preference(
     response_model=PreferenceFileReceiveResponse
 )
 async def ai_initiated_file_upload(
-    session_id: str = Form(...),
+    session_id: int = Form(...),
     file: UploadFile = File(...),
     x_signature_hmac_sha256: str = Header(..., alias="X-Signature-HMAC-SHA256")
 ):
