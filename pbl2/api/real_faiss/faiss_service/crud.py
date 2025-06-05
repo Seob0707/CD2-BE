@@ -341,7 +341,7 @@ async def get_sessions_by_keyword(
     user_id: int,
     keyword: str,
     db_sql: AsyncSession
-) -> List[schema.ConversationHistoryResponse]:
+) -> List[schema.SessionSummaryResponse]:
     if db is None:
         raise ValueError("FAISS DB not initialized. Cannot search by keyword.")
     if not isinstance(db.docstore, InMemoryDocstore):
@@ -366,19 +366,38 @@ async def get_sessions_by_keyword(
             if session_id is not None and isinstance(session_id, int):
                 matching_session_ids.add(session_id)
 
-    sessions_history: List[schema.ConversationHistoryResponse] = []
-    for session_id_val in sorted(list(matching_session_ids)):
-        try:
-            history = await get_conversation_history_by_session(
-                session_id=session_id_val,
-                user_id=user_id,
-                db_sql=db_sql
-            )
-            if history.messages:
-                sessions_history.append(history)
-        except Exception as e:
-            logger.error(f"Error fetching history for session_id {session_id_val} (user_id: {user_id}) during keyword search: {e}", exc_info=True)
-    return sessions_history
+    session_summaries: List[schema.SessionSummaryResponse] = []
+    
+    session_orm_result = await db_sql.execute(
+        select(OrmSession)
+        .options(selectinload(OrmSession.topics))
+        .where(
+            OrmSession.session_id.in_(list(matching_session_ids)),
+            OrmSession.user_id == user_id
+        )
+    )
+    sessions_orm = session_orm_result.scalars().all()
+
+    for session_orm in sessions_orm:
+        message_count = sum(1 for doc_obj in db.docstore._dict.values() 
+                          if isinstance(doc_obj, Document) and 
+                             doc_obj.metadata.get("session_id") == session_orm.session_id and
+                             doc_obj.metadata.get("user_id") == user_id)
+        
+        topics = [topic.topic_name for topic in session_orm.topics] if session_orm.topics else []
+        
+        session_summaries.append(schema.SessionSummaryResponse(
+            session_id=session_orm.session_id,
+            title=session_orm.title,
+            topics=topics,
+            message_count=message_count,
+            created_at=session_orm.created_at.isoformat(),
+            modified_at=session_orm.modify_at.isoformat() if session_orm.modify_at else None
+        ))
+
+    session_summaries.sort(key=lambda x: x.modified_at or x.created_at, reverse=True)
+    
+    return session_summaries
 
 async def ai_update_document(
     message_id: str,

@@ -104,4 +104,12 @@ class AIMessageUpdateResponse(BaseModel):
     message_id: str
     message: str
 
+class SessionSummaryResponse(BaseModel):
+    session_id: int
+    title: str
+    topics: Optional[List[str]] = None
+    message_count: int
+    created_at: str
+    modified_at: Optional[str] = None    
+
 Query = SessionSearchQuery

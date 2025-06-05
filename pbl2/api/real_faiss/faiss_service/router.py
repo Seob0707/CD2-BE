@@ -158,7 +158,7 @@ async def search_within_session_endpoint(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Session search failed.")
 
-@router.post("/search/keyword/sessions", response_model=List[schema.ConversationHistoryResponse])
+@router.post("/search/keyword/sessions", response_model=List[schema.SessionSummaryResponse])
 async def search_sessions_by_keyword_endpoint(
     request: schema.KeywordSearchRequest,
     current_user: MainUser = Depends(get_current_user),
@@ -167,17 +167,17 @@ async def search_sessions_by_keyword_endpoint(
     if not request.keyword or not request.keyword.strip():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Keyword cannot be empty.")
     try:
-        sessions_history = await crud.get_sessions_by_keyword(
+        sessions_summary = await crud.get_sessions_by_keyword(
             user_id=current_user.user_id,
             keyword=request.keyword,
             db_sql=db_sql
         )
-        return sessions_history
+        return sessions_summary
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Service Unavailable: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during keyword session search.")
-
+    
 @router.patch("/message", response_model=schema.MessageUpdateResponse)
 async def update_message_content(
     request: schema.MessageUpdateRequest,
